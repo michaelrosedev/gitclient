@@ -107,6 +107,29 @@ describe("PRPanel", () => {
     expect(useGithubStore.getState().prDraft).toBeNull();
   });
 
+  it("opens the New PR form when a draft arrives after the panel mounts", async () => {
+    mockInvoke.mockResolvedValueOnce([]);
+    useRepoStore.setState({
+      currentRepo: { name: "gitclient", path: "/repo", headBranch: "feat/x" },
+      recentRepos: [],
+      branches: [],
+    });
+
+    render(<PRPanel />);
+
+    await screen.findByText(/no open pull requests/i);
+    expect(screen.queryByPlaceholderText(/title/i)).toBeNull();
+
+    act(() => {
+      useGithubStore.setState({
+        prDraft: { head: "feat/later", base: "release" },
+      });
+    });
+
+    expect(await screen.findByDisplayValue("feat/later")).toBeTruthy();
+    expect(screen.getByDisplayValue("release")).toBeTruthy();
+  });
+
   it("shows a message when no GitHub remote is detected", () => {
     useGithubStore.setState({ remoteInfo: null });
 
