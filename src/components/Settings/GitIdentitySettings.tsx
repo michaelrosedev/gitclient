@@ -46,8 +46,10 @@ function ScopeToggle({
   );
 }
 
-const scopeIdentity = (config: IdentityConfig, scope: IdentityScope): Identity | null =>
-  scope === "local" ? config.local : config.global;
+const scopeIdentity = (
+  config: IdentityConfig,
+  scope: IdentityScope,
+): Identity | null => (scope === "local" ? config.local : config.global);
 
 /**
  * Settings → Git identity. Shows the effective commit identity and lets the user
@@ -58,8 +60,6 @@ const scopeIdentity = (config: IdentityConfig, scope: IdentityScope): Identity |
 export function GitIdentitySettings() {
   const [config, setConfig] = useState<IdentityConfig | null>(null);
   const [scope, setScope] = useState<IdentityScope>("local");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const toastSuccess = useToastStore((s) => s.success);
@@ -68,22 +68,19 @@ export function GitIdentitySettings() {
     getIdentityConfig().then(setConfig, (e) => setError(String(e)));
   }, []);
 
-  // Prefill the inputs from the selected scope (or the effective identity when
-  // that scope has nothing set), whenever the scope changes or config reloads.
-  useEffect(() => {
-    if (!config) return;
-    const src = scopeIdentity(config, scope) ?? config.effective;
-    setName(src.name);
-    setEmail(src.email);
-  }, [config, scope]);
+  const initialIdentity = config
+    ? (scopeIdentity(config, scope) ?? config.effective)
+    : { name: "", email: "" };
 
-  const handleSave = async () => {
+  const handleSave = async (name: string, email: string) => {
     setSaving(true);
     setError(null);
     try {
       const updated = await setIdentity(name.trim(), email.trim(), scope);
       setConfig(updated);
-      toastSuccess(`Saved ${scope === "global" ? "global" : "repository"} identity`);
+      toastSuccess(
+        `Saved ${scope === "global" ? "global" : "repository"} identity`,
+      );
     } catch (e) {
       setError(String(e));
     } finally {
@@ -91,30 +88,84 @@ export function GitIdentitySettings() {
     }
   };
 
-  const canSave = name.trim().length > 0 && email.trim().length > 0 && !saving;
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-3)",
+      }}
+    >
       <p style={descriptionStyle}>
-        The name and email recorded on the commits you make. Set it just for this
-        repository or globally for all repositories.
+        The name and email recorded on the commits you make. Set it just for
+        this repository or globally for all repositories.
       </p>
 
       {config && (
-        <div style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)" }}>
+        <div
+          style={{
+            fontSize: "var(--font-size-sm)",
+            color: "var(--color-text-muted)",
+          }}
+        >
           Commits here use{" "}
           <span style={{ color: "var(--color-text-primary)" }}>
-            {config.effective.name || "(no name)"} &lt;{config.effective.email || "no email"}&gt;
+            {config.effective.name || "(no name)"} &lt;
+            {config.effective.email || "no email"}&gt;
           </span>
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+      <div
+        style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}
+      >
         <span style={labelStyle}>Scope</span>
         <ScopeToggle value={scope} onChange={setScope} />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+      <IdentityForm
+        key={JSON.stringify([
+          scope,
+          initialIdentity.name,
+          initialIdentity.email,
+        ])}
+        initialIdentity={initialIdentity}
+        saving={saving}
+        onSave={handleSave}
+      />
+
+      {error && (
+        <span
+          style={{
+            fontSize: "var(--font-size-sm)",
+            color: "var(--color-danger)",
+          }}
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function IdentityForm({
+  initialIdentity,
+  saving,
+  onSave,
+}: {
+  initialIdentity: Identity;
+  saving: boolean;
+  onSave: (name: string, email: string) => Promise<void>;
+}) {
+  const [name, setName] = useState(initialIdentity.name);
+  const [email, setEmail] = useState(initialIdentity.email);
+  const canSave = name.trim().length > 0 && email.trim().length > 0 && !saving;
+
+  return (
+    <>
+      <div
+        style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}
+      >
         <span style={labelStyle}>Name</span>
         <Input
           value={name}
@@ -125,7 +176,9 @@ export function GitIdentitySettings() {
         />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+      <div
+        style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}
+      >
         <span style={labelStyle}>Email</span>
         <Input
           type="email"
@@ -137,15 +190,19 @@ export function GitIdentitySettings() {
         />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-        <Button variant="primary" size="sm" disabled={!canSave} loading={saving} onClick={() => void handleSave()}>
+      <div
+        style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+      >
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={!canSave}
+          loading={saving}
+          onClick={() => void onSave(name.trim(), email.trim())}
+        >
           Save
         </Button>
       </div>
-
-      {error && (
-        <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-danger)" }}>{error}</span>
-      )}
-    </div>
+    </>
   );
 }

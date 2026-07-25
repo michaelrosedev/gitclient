@@ -27,29 +27,87 @@ describe("GitIdentitySettings", () => {
     await waitFor(() =>
       expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"),
     );
-    expect(screen.getByLabelText("Identity email")).toHaveValue("local@example.com");
+    expect(screen.getByLabelText("Identity email")).toHaveValue(
+      "local@example.com",
+    );
     expect(screen.getByText(/Local Dev/)).toBeInTheDocument();
   });
 
   it("prefills from the global scope when switched", async () => {
     mockInvoke.mockResolvedValueOnce(config);
     render(<GitIdentitySettings />);
-    await waitFor(() => expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Global" }));
 
     expect(screen.getByLabelText("Identity name")).toHaveValue("Global Dev");
-    expect(screen.getByLabelText("Identity email")).toHaveValue("global@example.com");
+    expect(screen.getByLabelText("Identity email")).toHaveValue(
+      "global@example.com",
+    );
+  });
+
+  it("prefills the selected scope after an identity config reload", async () => {
+    const configWithoutGlobal = {
+      effective: { name: "Effective Dev", email: "effective@example.com" },
+      local: { name: "Local Dev", email: "local@example.com" },
+      global: null,
+    };
+    const refreshedConfig = {
+      effective: { name: "Saved Global", email: "saved@example.com" },
+      local: { name: "Local Dev", email: "local@example.com" },
+      global: { name: "Saved Global", email: "saved@example.com" },
+    };
+    mockInvoke
+      .mockResolvedValueOnce(configWithoutGlobal)
+      .mockResolvedValueOnce(refreshedConfig);
+    render(<GitIdentitySettings />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Global" }));
+    expect(screen.getByLabelText("Identity name")).toHaveValue("Effective Dev");
+    expect(screen.getByLabelText("Identity email")).toHaveValue(
+      "effective@example.com",
+    );
+
+    fireEvent.change(screen.getByLabelText("Identity name"), {
+      target: { value: "Saved Global" },
+    });
+    fireEvent.change(screen.getByLabelText("Identity email"), {
+      target: { value: "saved@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Identity name")).toHaveValue(
+        "Saved Global",
+      ),
+    );
+    expect(screen.getByLabelText("Identity email")).toHaveValue(
+      "saved@example.com",
+    );
   });
 
   it("saves the chosen scope's identity", async () => {
     mockInvoke.mockResolvedValueOnce(config); // get_identity_config
-    mockInvoke.mockResolvedValueOnce({ ...config, local: { name: "Edited", email: "edited@example.com" } }); // set_identity
+    mockInvoke.mockResolvedValueOnce({
+      ...config,
+      local: { name: "Edited", email: "edited@example.com" },
+    }); // set_identity
     render(<GitIdentitySettings />);
-    await waitFor(() => expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"),
+    );
 
-    fireEvent.change(screen.getByLabelText("Identity name"), { target: { value: "Edited" } });
-    fireEvent.change(screen.getByLabelText("Identity email"), { target: { value: "edited@example.com" } });
+    fireEvent.change(screen.getByLabelText("Identity name"), {
+      target: { value: "Edited" },
+    });
+    fireEvent.change(screen.getByLabelText("Identity email"), {
+      target: { value: "edited@example.com" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() =>
@@ -68,11 +126,15 @@ describe("GitIdentitySettings", () => {
       global: null,
     });
     render(<GitIdentitySettings />);
-    await waitFor(() => expect(screen.getByLabelText("Identity name")).toHaveValue(""));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Identity name")).toHaveValue(""),
+    );
 
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText("Identity name"), { target: { value: "Only Name" } });
+    fireEvent.change(screen.getByLabelText("Identity name"), {
+      target: { value: "Only Name" },
+    });
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled(); // email still empty
   });
 });

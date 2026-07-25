@@ -20,24 +20,27 @@ const checkboxLabelStyle: React.CSSProperties = {
 
 export function GitHooksSettings() {
   const repoPath = useRepoStore((state) => state.currentRepo?.path ?? null);
+
+  if (repoPath === null) {
+    return (
+      <p style={descriptionStyle}>
+        Open a repository to configure its Git hooks.
+      </p>
+    );
+  }
+
+  return <HookPreferencesForm key={repoPath} repoPath={repoPath} />;
+}
+
+function HookPreferencesForm({ repoPath }: { repoPath: string }) {
   const requestIdRef = useRef(0);
   const [preferences, setPreferences] = useState<HookPreferences | null>(null);
-  const [loading, setLoading] = useState(repoPath !== null);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const requestId = ++requestIdRef.current;
-    setPreferences(null);
-    setSaving(false);
-    setError(null);
-
-    if (repoPath === null) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
     void invoke<HookPreferences>("get_hook_preferences", { repoPath }).then(
       (loaded) => {
         if (requestId !== requestIdRef.current) return;
@@ -50,15 +53,11 @@ export function GitHooksSettings() {
         setLoading(false);
       },
     );
-  }, [repoPath]);
 
-  if (repoPath === null) {
-    return (
-      <p style={descriptionStyle}>
-        Open a repository to configure its Git hooks.
-      </p>
-    );
-  }
+    return () => {
+      requestIdRef.current += 1;
+    };
+  }, [repoPath]);
 
   const persist = async (next: HookPreferences) => {
     const requestId = requestIdRef.current;
