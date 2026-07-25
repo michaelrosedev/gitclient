@@ -1,14 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useGithubStore } from "../../stores/githubStore";
 import { useToastStore } from "../../stores/toastStore";
 import { Button } from "../ui/Button";
 import { Spinner } from "../ui/Spinner";
 import { DeviceFlowModal } from "../GitHub/DeviceFlowModal";
-import type { GithubConnection, GithubConnectionState } from "../../types/github";
+import type {
+  GithubConnection,
+  GithubConnectionState,
+} from "../../types/github";
 
 // Re-validate the connection on this cadence while Settings is open, so a
 // token that's revoked elsewhere is caught without a manual check.
 const POLL_MS = 60_000;
+const DISCONNECTED_CONNECTION: GithubConnection = {
+  state: "disconnected",
+  login: null,
+  message: null,
+};
 
 const DOT_COLOR: Record<GithubConnectionState, string> = {
   connected: "var(--color-success)",
@@ -21,7 +29,9 @@ const DOT_COLOR: Record<GithubConnectionState, string> = {
 function statusLabel(conn: GithubConnection, host: string): string {
   switch (conn.state) {
     case "checking":
-      return conn.login ? `Connected as ${conn.login} · ${host}` : `Checking connection · ${host}…`;
+      return conn.login
+        ? `Connected as ${conn.login} · ${host}`
+        : `Checking connection · ${host}…`;
     case "connected":
       return `Connected as ${conn.login ?? "?"} · ${host}`;
     case "expired":
@@ -48,22 +58,30 @@ export function GithubSettings() {
   const [connecting, setConnecting] = useState(false);
 
   const host = remoteInfo?.host ?? "github.com";
-  const conn: GithubConnection = connections[host] ?? {
-    state: "disconnected",
-    login: null,
-    message: null,
-  };
+  const conn: GithubConnection = connections[host] ?? DISCONNECTED_CONNECTION;
 
   // A re-check flips the store state to "checking"; keep the last resolved state
   // on screen so the buttons stay put (no layout shift) — they're just disabled
-  // with a spinner while the check is in flight. Tracked in a ref updated during
-  // render (no extra state/re-render needed).
-  const lastResolved = useRef<GithubConnection>(conn);
-  if (conn.state !== "checking") lastResolved.current = conn;
+  // with a spinner while the check is in flight.
+  const [lastResolved, setLastResolved] = useState<GithubConnection>(conn);
+
+  useEffect(() => {
+    if (conn.state === "checking") return;
+
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setLastResolved(conn);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [conn]);
 
   const handleLogout = () => {
     logout(host).catch((e: unknown) =>
-      useToastStore.getState().error(String(e), { title: "Couldn't disconnect" }),
+      useToastStore
+        .getState()
+        .error(String(e), { title: "Couldn't disconnect" }),
     );
   };
 
@@ -79,11 +97,19 @@ export function GithubSettings() {
   }, [host, checkConnection]);
 
   const busy = conn.state === "checking";
-  const view = busy ? lastResolved.current : conn;
+  const view = busy ? lastResolved : conn;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-3)",
+      }}
+    >
+      <div
+        style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}
+      >
         <span
           aria-hidden
           style={{
@@ -94,14 +120,26 @@ export function GithubSettings() {
             flexShrink: 0,
           }}
         />
-        <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
+        <span
+          style={{
+            fontSize: "var(--font-size-sm)",
+            color: "var(--color-text-secondary)",
+          }}
+        >
           {statusLabel(view, host)}
         </span>
-        {busy && <Spinner size={12} style={{ color: "var(--color-text-muted)" }} />}
+        {busy && (
+          <Spinner size={12} style={{ color: "var(--color-text-muted)" }} />
+        )}
       </div>
 
       {view.state === "error" && view.message && (
-        <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
+        <div
+          style={{
+            fontSize: "var(--font-size-xs)",
+            color: "var(--color-text-muted)",
+          }}
+        >
           {view.message}
         </div>
       )}
@@ -119,7 +157,11 @@ export function GithubSettings() {
         )}
         {view.state === "expired" && (
           <>
-            <Button variant="primary" onClick={() => setConnecting(true)} disabled={busy}>
+            <Button
+              variant="primary"
+              onClick={() => setConnecting(true)}
+              disabled={busy}
+            >
               Reconnect
             </Button>
             <Button onClick={handleLogout} disabled={busy}>
@@ -128,7 +170,11 @@ export function GithubSettings() {
           </>
         )}
         {view.state === "disconnected" && (
-          <Button variant="primary" onClick={() => setConnecting(true)} disabled={busy}>
+          <Button
+            variant="primary"
+            onClick={() => setConnecting(true)}
+            disabled={busy}
+          >
             Connect
           </Button>
         )}
