@@ -48,7 +48,7 @@ class MockResizeObserver implements ResizeObserver {
 }
 
 window.ResizeObserver = MockResizeObserver;
-global.ResizeObserver = window.ResizeObserver;
+globalThis.ResizeObserver = window.ResizeObserver;
 
 // Test helper: synchronously invoke the ResizeObserver callback registered
 // for `target` (as if a real resize had just been observed).
