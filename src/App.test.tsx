@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom";
 import { listen } from "@tauri-apps/api/event";
@@ -97,7 +103,9 @@ beforeEach(() => {
     loadStatus: vi.fn().mockResolvedValue(undefined),
   });
 
-  useTagStore.setState({ loadRemoteTags: vi.fn().mockResolvedValue(undefined) });
+  useTagStore.setState({
+    loadRemoteTags: vi.fn().mockResolvedValue(undefined),
+  });
 
   useWorkingTreeStore.setState({
     refreshAll: vi.fn().mockResolvedValue(undefined),
@@ -113,14 +121,18 @@ afterEach(() => {
 
 describe("App repo-scoped effect", () => {
   it("shows a toast instead of throwing when loading repo-scoped state fails", async () => {
-    useRepoStore.setState({ loadBranches: vi.fn().mockRejectedValue(new Error("backend unavailable")) });
+    useRepoStore.setState({
+      loadBranches: vi.fn().mockRejectedValue(new Error("backend unavailable")),
+    });
     const error = vi.fn();
     useToastStore.setState({ error });
 
     render(<App />);
     // Boot completes asynchronously (splash screen) before the repo-scoped
     // effect's promises settle.
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
 
     await waitFor(() =>
       expect(error).toHaveBeenCalledWith("Error: backend unavailable", {
@@ -178,7 +190,12 @@ describe("App per-line staging guard", () => {
     );
 
     useGraphStore.setState({
-      viewport: { nodes: [workingTreeNode], totalCount: 1, offset: 0, headRow: null },
+      viewport: {
+        nodes: [workingTreeNode],
+        totalCount: 1,
+        offset: 0,
+        headRow: null,
+      },
     });
 
     useWorkingTreeStore.setState({
@@ -197,19 +214,25 @@ describe("App per-line staging guard", () => {
     });
 
     const { container } = render(<App />);
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
 
     // Drive into the uncommitted-diff view the same way a user would: click
     // the working-tree row in the graph.
     const workingTreeRow = await waitFor(() => {
-      const row = container.querySelector<HTMLElement>(`[data-oid="${WORKING_TREE_OID}"]`);
+      const row = container.querySelector<HTMLElement>(
+        `[data-oid="${WORKING_TREE_OID}"]`,
+      );
       expect(row).not.toBeNull();
       return row!;
     });
     fireEvent.click(workingTreeRow);
 
     const toggles = await waitFor(() => {
-      const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle"));
+      const buttons = Array.from(
+        container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle"),
+      );
       expect(buttons.length).toBeGreaterThanOrEqual(2);
       return buttons;
     });
@@ -256,18 +279,24 @@ describe("App boot sequence", () => {
 
     // Boot is best-effort: a rejected restore step must not leave the user
     // stuck behind the splash screen.
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
   });
 });
 
 describe("App hook integration", () => {
   it("initializes hook listeners once and cleans them up on unmount", async () => {
     const cleanup = vi.fn();
-    const init = vi.spyOn(hookStore, "initHookListeners").mockResolvedValue(cleanup);
+    const init = vi
+      .spyOn(hookStore, "initHookListeners")
+      .mockResolvedValue(cleanup);
 
     const { unmount } = render(<App />);
     await waitFor(() => expect(init).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
     unmount();
 
     expect(cleanup).toHaveBeenCalledTimes(1);
@@ -305,26 +334,44 @@ describe("App hook integration", () => {
     });
 
     render(<App />);
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
     await waitFor(() => {
-      expect(screen.getByRole("region", { name: /hook output/i })).toHaveStyle({ height: "480px" });
-      expect(screen.getByRole("contentinfo", { name: /git hook status/i })).toBeInTheDocument();
+      expect(screen.getByRole("region", { name: /hook output/i })).toHaveStyle({
+        height: "480px",
+      });
+      expect(
+        screen.getByRole("contentinfo", { name: /git hook status/i }),
+      ).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("tab", { name: "PRs" }));
-    expect(screen.queryByRole("region", { name: /hook output/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("contentinfo", { name: /git hook status/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: /hook output/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("contentinfo", { name: /git hook status/i }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "Settings" }));
-    expect(screen.queryByRole("region", { name: /hook output/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("contentinfo", { name: /git hook status/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: /hook output/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("contentinfo", { name: /git hook status/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not mount hook UI on welcome or full-screen merge views", async () => {
     useRepoStore.setState({ currentRepo: null, activeRepoPath: null });
     const { rerender } = render(<App />);
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
-    expect(screen.queryByRole("contentinfo", { name: /git hook status/i })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole("contentinfo", { name: /git hook status/i }),
+    ).not.toBeInTheDocument();
 
     useRepoStore.setState({ currentRepo: repo, activeRepoPath: repo.path });
     hookStore.useHookStore.getState().started({
@@ -334,11 +381,17 @@ describe("App hook integration", () => {
       operation: "commit",
     });
     useMergeStore.setState({
-      status: { kind: "merge", sourceBranch: "feature", conflicts: [oneConflict] },
+      status: {
+        kind: "merge",
+        sourceBranch: "feature",
+        conflicts: [oneConflict],
+      },
     });
     rerender(<App />);
     await waitFor(() =>
-      expect(screen.queryByRole("contentinfo", { name: /git hook status/i })).not.toBeInTheDocument(),
+      expect(
+        screen.queryByRole("contentinfo", { name: /git hook status/i }),
+      ).not.toBeInTheDocument(),
     );
   });
 });
@@ -358,29 +411,111 @@ const oneConflict: ConflictedFile = {
 };
 
 describe("App merge-editor latch", () => {
-  it("keeps the full-screen merge editor visible after the last conflict resolves mid-merge", async () => {
+  it("keeps the full-screen merge editor visible after a clean merge gains then resolves conflicts", async () => {
     render(<App />);
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
     expect(screen.getByRole("tablist", { name: "Views" })).toBeInTheDocument();
 
-    // Merge starts with a conflict — the full-screen editor takes over (NavBar
+    // A clean merge initially keeps the normal app visible.
+    useMergeStore.setState({
+      status: { kind: "merge", sourceBranch: "feature", conflicts: [] },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("tablist", { name: "Views" }),
+      ).toBeInTheDocument(),
+    );
+
+    // A conflict then appears, so the full-screen editor takes over (NavBar
     // and the rest of the app tree are not rendered alongside it).
-    useMergeStore.setState({ status: { kind: "merge", sourceBranch: "feature", conflicts: [oneConflict] } });
-    await waitFor(() => expect(screen.queryByRole("tablist", { name: "Views" })).not.toBeInTheDocument());
+    useMergeStore.setState({
+      status: {
+        kind: "merge",
+        sourceBranch: "feature",
+        conflicts: [oneConflict],
+      },
+    });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("tablist", { name: "Views" }),
+      ).not.toBeInTheDocument(),
+    );
 
     // The last conflict resolves, but the merge is still in progress — the
     // surface must not flip to the floating commit dialog mid-resolution.
-    useMergeStore.setState({ status: { kind: "merge", sourceBranch: "feature", conflicts: [] } });
-    await waitFor(() => expect(screen.queryByRole("tablist", { name: "Views" })).not.toBeInTheDocument());
+    useMergeStore.setState({
+      status: { kind: "merge", sourceBranch: "feature", conflicts: [] },
+    });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("tablist", { name: "Views" }),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it("shows the floating commit dialog, not the full-screen editor, for a merge that starts clean", async () => {
     render(<App />);
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
 
-    useMergeStore.setState({ status: { kind: "merge", sourceBranch: "feature", conflicts: [] } });
+    useMergeStore.setState({
+      status: { kind: "merge", sourceBranch: "feature", conflicts: [] },
+    });
 
-    await waitFor(() => expect(screen.getByRole("tablist", { name: "Views" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("tablist", { name: "Views" }),
+      ).toBeInTheDocument(),
+    );
+  });
+});
+
+describe("App repository-scoped history panel", () => {
+  it("returns the right panel to commit details when the active repository changes", async () => {
+    const nextRepo = { name: "other", path: "/other", headBranch: "trunk" };
+    useGraphStore.setState({
+      viewport: {
+        nodes: [workingTreeNode],
+        totalCount: 1,
+        offset: 0,
+        headRow: null,
+      },
+    });
+
+    const { container } = render(<App />);
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
+
+    const workingTreeRow = await waitFor(() => {
+      const row = container.querySelector<HTMLElement>(
+        `[data-oid="${WORKING_TREE_OID}"]`,
+      );
+      expect(row).not.toBeNull();
+      return row!;
+    });
+    fireEvent.click(workingTreeRow);
+    await waitFor(() =>
+      expect(screen.getByText("0 file changes on")).toBeInTheDocument(),
+    );
+
+    act(() => {
+      useRepoStore.setState({
+        currentRepo: nextRepo,
+        activeRepoPath: nextRepo.path,
+        openRepos: [repo, nextRepo],
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("0 file changes on")).not.toBeInTheDocument();
+      expect(
+        screen.getByText("Select a commit to view details"),
+      ).toBeInTheDocument();
+    });
   });
 });
 
@@ -397,7 +532,9 @@ describe("App background poll", () => {
     useRepoStore.setState({ syncHead });
 
     render(<App />);
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
 
     // Tick 0 (t=8s) always scans: a freshly-opened repo starts flagged dirty
     // regardless of any watcher event (see App.tsx's wtDirtyRef comment).
@@ -430,7 +567,9 @@ describe("App background poll", () => {
     useRepoStore.setState({ syncHead });
 
     render(<App />);
-    await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(8000); // tick 0 starts; refreshAll never resolves
