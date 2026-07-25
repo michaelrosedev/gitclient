@@ -306,8 +306,10 @@ describe("App hook integration", () => {
 
     render(<App />);
     await waitFor(() => expect(screen.queryByText(/starting/i)).not.toBeInTheDocument());
-    expect(screen.getByRole("region", { name: /hook output/i })).toHaveStyle({ height: "480px" });
-    expect(screen.getByRole("contentinfo", { name: /git hook status/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("region", { name: /hook output/i })).toHaveStyle({ height: "480px" });
+      expect(screen.getByRole("contentinfo", { name: /git hook status/i })).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole("tab", { name: "PRs" }));
     expect(screen.queryByRole("region", { name: /hook output/i })).not.toBeInTheDocument();
