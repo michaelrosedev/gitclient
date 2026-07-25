@@ -21,9 +21,8 @@ describe("GitIdentitySettings", () => {
     mockInvoke.mockResolvedValueOnce(config); // get_identity_config
     render(<GitIdentitySettings />);
 
-    // The inputs are prefilled by a passive effect that runs *after* the effect
-    // which loads config and renders the effective-identity text — so wait on the
-    // input value itself, not the text, or the assertion can race the prefill.
+    // The config load mounts a keyed identity form, so wait for its input values
+    // rather than the effective-identity text before asserting the prefill.
     await waitFor(() =>
       expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"),
     );
@@ -55,9 +54,9 @@ describe("GitIdentitySettings", () => {
       global: null,
     };
     const refreshedConfig = {
-      effective: { name: "Saved Global", email: "saved@example.com" },
+      effective: { name: "Canonical Global", email: "canonical@example.com" },
       local: { name: "Local Dev", email: "local@example.com" },
-      global: { name: "Saved Global", email: "saved@example.com" },
+      global: { name: "Canonical Global", email: "canonical@example.com" },
     };
     mockInvoke
       .mockResolvedValueOnce(configWithoutGlobal)
@@ -74,20 +73,20 @@ describe("GitIdentitySettings", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Identity name"), {
-      target: { value: "Saved Global" },
+      target: { value: "Requested Global" },
     });
     fireEvent.change(screen.getByLabelText("Identity email"), {
-      target: { value: "saved@example.com" },
+      target: { value: "requested@example.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() =>
       expect(screen.getByLabelText("Identity name")).toHaveValue(
-        "Saved Global",
+        "Canonical Global",
       ),
     );
     expect(screen.getByLabelText("Identity email")).toHaveValue(
-      "saved@example.com",
+      "canonical@example.com",
     );
   });
 
