@@ -880,7 +880,6 @@ mod tests {
         )
     }
 
-    #[cfg(unix)]
     fn record_commit_events(
         app: &tauri::App<tauri::test::MockRuntime>,
     ) -> Arc<Mutex<Vec<(String, serde_json::Value)>>> {
