@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { CommitDetail as CommitDetailData } from "../../types/repo";
 import { FileList } from "./FileList";
@@ -10,54 +10,63 @@ interface CommitDetailProps {
 }
 
 export function CommitDetail({ oid }: CommitDetailProps) {
-  const [detail, setDetail] = useState<CommitDetailData | null>(null);
-  const {
-    oid: openOid,
-    path: openPath,
-    selectFile,
-    clear: clearCommitFile,
-  } = useCommitFileStore();
-  const oidRef = useRef<string | null>(null);
+  const clearCommitFile = useCommitFileStore((state) => state.clear);
 
-  // Track the latest requested oid so we can drop stale responses
+  // A different commit's diff must start with no main-panel file selected.
   useEffect(() => {
-    oidRef.current = oid;
-  }, [oid]);
-
-  useEffect(() => {
-    if (!oid) {
-      setDetail(null);
-      clearCommitFile();
-      return;
-    }
-    // A different commit: drop any file open in the main-panel diff so it returns
-    // to the graph and this commit's file list reads fresh.
     clearCommitFile();
-    invoke<CommitDetailData>("get_commit_diff", { oid })
-      .then((detail) => {
-        if (oidRef.current === oid) setDetail(detail);
-      })
-      .catch((e: unknown) =>
-        useToastStore.getState().error(String(e), { title: "Couldn't load commit" }),
-      );
   }, [oid, clearCommitFile]);
 
-  if (!oid || !detail) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          color: "var(--color-text-muted)",
-          fontSize: "var(--font-size-sm)",
-        }}
-      >
-        Select a commit to view details
-      </div>
-    );
-  }
+  if (!oid) return <EmptyCommitDetail />;
+
+  // The selected OID defines this view's state lifetime. Changing it replaces
+  // the loading state immediately instead of showing the previous commit while
+  // the next diff request is in flight.
+  return <CommitDetailContent key={oid} oid={oid} />;
+}
+
+function EmptyCommitDetail() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+        color: "var(--color-text-muted)",
+        fontSize: "var(--font-size-sm)",
+      }}
+    >
+      Select a commit to view details
+    </div>
+  );
+}
+
+function CommitDetailContent({ oid }: { oid: string }) {
+  const [detail, setDetail] = useState<CommitDetailData | null>(null);
+  const { oid: openOid, path: openPath, selectFile } = useCommitFileStore();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    invoke<CommitDetailData>("get_commit_diff", { oid })
+      .then((nextDetail) => {
+        if (!cancelled) setDetail(nextDetail);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          useToastStore
+            .getState()
+            .error(String(e), { title: "Couldn't load commit" });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [oid]);
+
+  if (!detail) return <EmptyCommitDetail />;
 
   const date = new Date(detail.authorTimestamp * 1000).toLocaleString();
   // Only highlight a file when its diff (for this commit) is the one open.
@@ -66,12 +75,21 @@ export function CommitDetail({ oid }: CommitDetailProps) {
   const handleSelect = (path: string) => {
     const file = detail.changedFiles.find((f) => f.path === path);
     selectFile(oid, path, file?.oldPath ?? null).catch((e: unknown) =>
-      useToastStore.getState().error(String(e), { title: "Couldn't load diff" }),
+      useToastStore
+        .getState()
+        .error(String(e), { title: "Couldn't load diff" }),
     );
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        overflow: "hidden",
+      }}
+    >
       {/* Commit metadata */}
       <div
         style={{
@@ -93,7 +111,12 @@ export function CommitDetail({ oid }: CommitDetailProps) {
         >
           {detail.message}
         </div>
-        <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
+        <div
+          style={{
+            fontSize: "var(--font-size-xs)",
+            color: "var(--color-text-muted)",
+          }}
+        >
           {detail.authorName} &lt;{detail.authorEmail}&gt; · {date}
         </div>
         <div

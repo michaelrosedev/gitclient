@@ -18,8 +18,12 @@ describe("ChangeOverview", () => {
     expect(left.querySelectorAll("[data-overview-mark]").length).toBe(1);
     expect(right.querySelectorAll("[data-overview-mark]").length).toBe(1);
     // A modification is amber on both sides.
-    expect(left.querySelector("[data-overview-mark]")!.getAttribute("data-color")).toBe("mod");
-    expect(right.querySelector("[data-overview-mark]")!.getAttribute("data-color")).toBe("mod");
+    expect(
+      left.querySelector("[data-overview-mark]")!.getAttribute("data-color"),
+    ).toBe("mod");
+    expect(
+      right.querySelector("[data-overview-mark]")!.getAttribute("data-color"),
+    ).toBe("mod");
   });
 
   it("renders a single combined lane when not split", () => {
@@ -30,24 +34,41 @@ describe("ChangeOverview", () => {
 
   it("shows a viewport thumb sized and positioned from the viewport prop", () => {
     const { getByTestId, rerender, queryByTestId } = render(
-      <ChangeOverview rows={modifiedRows} viewport={{ top: 0.25, height: 0.5 }} onScrollTo={vi.fn()} />,
+      <ChangeOverview
+        rows={modifiedRows}
+        viewport={{ top: 0.25, height: 0.5 }}
+        onScrollTo={vi.fn()}
+      />,
     );
     const thumb = getByTestId("overview-thumb");
     expect(thumb.style.top).toBe("25%");
     expect(thumb.style.height).toBe("50%");
 
     // No thumb when the whole file fits (nothing to scroll).
-    rerender(<ChangeOverview rows={modifiedRows} viewport={{ top: 0, height: 1 }} onScrollTo={vi.fn()} />);
+    rerender(
+      <ChangeOverview
+        rows={modifiedRows}
+        viewport={{ top: 0, height: 1 }}
+        onScrollTo={vi.fn()}
+      />,
+    );
     expect(queryByTestId("overview-thumb")).toBeNull();
   });
 
   it("clicking the track scrolls so the thumb centres on the cursor", () => {
     const onScrollTo = vi.fn();
     const { getByTestId } = render(
-      <ChangeOverview rows={modifiedRows} viewport={{ top: 0, height: 0.5 }} onScrollTo={onScrollTo} />,
+      <ChangeOverview
+        rows={modifiedRows}
+        viewport={{ top: 0, height: 0.5 }}
+        onScrollTo={onScrollTo}
+      />,
     );
     const strip = getByTestId("change-overview");
-    vi.spyOn(strip, "getBoundingClientRect").mockReturnValue({ top: 0, height: 100 } as DOMRect);
+    vi.spyOn(strip, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+      height: 100,
+    } as DOMRect);
     // Click at 60% (outside the [0,0.5] thumb): centre it there → top 0.6 - 0.25.
     fireEvent.mouseDown(strip, { clientY: 60 });
     expect(onScrollTo).toHaveBeenLastCalledWith(0.35);
@@ -56,14 +77,62 @@ describe("ChangeOverview", () => {
   it("dragging the thumb keeps the grip point under the cursor", () => {
     const onScrollTo = vi.fn();
     const { getByTestId } = render(
-      <ChangeOverview rows={modifiedRows} viewport={{ top: 0, height: 0.5 }} onScrollTo={onScrollTo} />,
+      <ChangeOverview
+        rows={modifiedRows}
+        viewport={{ top: 0, height: 0.5 }}
+        onScrollTo={onScrollTo}
+      />,
     );
     const strip = getByTestId("change-overview");
-    vi.spyOn(strip, "getBoundingClientRect").mockReturnValue({ top: 0, height: 100 } as DOMRect);
+    vi.spyOn(strip, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+      height: 100,
+    } as DOMRect);
     // Grab the thumb near its top (10%), then drag down to 30%: thumb-top → 0.2.
     fireEvent.mouseDown(strip, { clientY: 10 });
     fireEvent.mouseMove(window, { clientY: 30 });
     expect(onScrollTo.mock.lastCall![0]).toBeCloseTo(0.2, 5);
+  });
+
+  it("rebinds an active drag to replacement viewport geometry and callback", () => {
+    const firstScrollTo = vi.fn();
+    const replacementScrollTo = vi.fn();
+    const addListener = vi.spyOn(window, "addEventListener");
+    const removeListener = vi.spyOn(window, "removeEventListener");
+    const { getByTestId, rerender } = render(
+      <ChangeOverview
+        rows={modifiedRows}
+        viewport={{ top: 0, height: 0.5 }}
+        onScrollTo={firstScrollTo}
+      />,
+    );
+    const strip = getByTestId("change-overview");
+    vi.spyOn(strip, "getBoundingClientRect").mockReturnValue({
+      top: 0,
+      height: 100,
+    } as DOMRect);
+
+    fireEvent.mouseDown(strip, { clientY: 10 });
+    const initialMove = addListener.mock.calls.find(
+      ([type]) => type === "mousemove",
+    )![1];
+
+    rerender(
+      <ChangeOverview
+        rows={modifiedRows}
+        viewport={{ top: 0, height: 0.25 }}
+        onScrollTo={replacementScrollTo}
+      />,
+    );
+
+    expect(removeListener).toHaveBeenCalledWith("mousemove", initialMove);
+    fireEvent.mouseMove(window, { clientY: 90 });
+    expect(firstScrollTo).toHaveBeenCalledTimes(1);
+    expect(replacementScrollTo).toHaveBeenLastCalledWith(0.75);
+
+    fireEvent.mouseUp(window);
+    addListener.mockRestore();
+    removeListener.mockRestore();
   });
 
   it("forwards the wheel delta so hovering the strip scrolls the diff, not just dragging", () => {
@@ -96,7 +165,9 @@ describe("ChangeOverview", () => {
   });
 
   it("renders a header spacer above the track when showHeaderSpacer is set (split view's pane headings)", () => {
-    const { queryByTestId } = render(<ChangeOverview rows={modifiedRows} showHeaderSpacer />);
+    const { queryByTestId } = render(
+      <ChangeOverview rows={modifiedRows} showHeaderSpacer />,
+    );
     expect(queryByTestId("overview-header-spacer")).toBeInTheDocument();
   });
 

@@ -327,7 +327,9 @@ export function ReadOnlyStagePane({
   // config without making the effect rebuild on every toggle.
   const wrapCompartment = useRef(new Compartment());
   const wrapRef = useRef(wrap);
-  wrapRef.current = wrap;
+  useEffect(() => {
+    wrapRef.current = wrap;
+  }, [wrap]);
   // This effect tears down and rebuilds the whole EditorView on every
   // dependency change — which includes `content`/`decorations`, freshly
   // computed on every line toggle — so a fresh view would otherwise reset
@@ -649,16 +651,16 @@ export function StageFileEditor({
   );
 
   // Row indices whose change reads as staged, driving the gutter symbols (`−`
-  // staged / `+` not). The two panels show a single git-native direction, so the
-  // whole view is one state: the unstaged (Changes) view opens with nothing
-  // staged (all `+`), the staged view with everything staged (all `−`). A toggle
-  // applies to the index immediately and the refetched diff re-seeds this.
-  const seedStaged = useCallback(
+  // staged / `+` not). Selection belongs to this stable diff/mode identity:
+  // changing file, diff, or mode therefore displays a fresh seed without an
+  // effect-driven reset, while a line toggle keeps its selection for this diff.
+  const stagedRowsKey = JSON.stringify([path, stageMode, ignoreWhitespace, contents.headContent, contents.worktreeContent]);
+  const defaultStagedRows = useMemo(
     () => (stageMode === "unstaged" ? new Set<number>() : new Set(changedRowIndices(rows))),
     [stageMode, rows],
   );
-  const [stagedRows, setStagedRows] = useState<Set<number>>(seedStaged);
-  const stagedRowsRef = useRef(stagedRows);
+  const [stagedRowsState, setStagedRowsState] = useState(() => ({ key: stagedRowsKey, rows: defaultStagedRows }));
+  const stagedRows = stagedRowsState.key === stagedRowsKey ? stagedRowsState.rows : defaultStagedRows;
   const headViewRef = useRef<EditorView | null>(null);
   const worktreeViewRef = useRef<EditorView | null>(null);
   const inlineViewRef = useRef<EditorView | null>(null);
@@ -667,11 +669,6 @@ export function StageFileEditor({
   // The visible slice of the diff, as fractions of the content height, driving
   // the change-overview's scrollbar thumb. Recomputed on scroll/resize.
   const [viewport, setViewport] = useState<{ top: number; height: number }>({ top: 0, height: 1 });
-
-  const applyStaged = useCallback((next: Set<number>) => {
-    stagedRowsRef.current = next;
-    setStagedRows(next);
-  }, []);
 
   // Guards against a second line-toggle firing while the first's index write
   // is still in flight: `onApplyIndex` composes the new index blob from the
@@ -699,20 +696,15 @@ export function StageFileEditor({
         });
         return;
       }
-      const next = new Set(stagedRowsRef.current);
-      if (next.has(rowIndex)) next.delete(rowIndex);
-      else next.add(rowIndex);
-      applyStaged(next);
+      setStagedRowsState((current) => {
+        const next = new Set(current.key === stagedRowsKey ? current.rows : defaultStagedRows);
+        if (next.has(rowIndex)) next.delete(rowIndex);
+        else next.add(rowIndex);
+        return { key: stagedRowsKey, rows: next };
+      });
     },
-    [stageMode, onApplyIndex, rows, path, applyStaged],
+    [stageMode, onApplyIndex, rows, path, stagedRowsKey, defaultStagedRows],
   );
-
-  // Re-seed the staged set whenever the file (its diff) or mode changes.
-  useEffect(() => {
-    const initial = seedStaged();
-    stagedRowsRef.current = initial;
-    setStagedRows(initial);
-  }, [seedStaged]);
 
   // Keep the two top panes vertically (and horizontally) in sync as you scroll.
   const syncingRef = useRef(false);

@@ -110,16 +110,14 @@ export function Dropdown({
   // requested edge (and matched to the trigger width when `fullWidth`). Recomputed
   // on layout, and on scroll/resize while open so the panel tracks the trigger.
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null);
-      return;
-    }
+    if (!open) return;
     const measure = () => {
       const rect = ref.current?.getBoundingClientRect();
       if (!rect) return;
       const top = rect.bottom + 2;
       if (fullWidth) setPos({ top, left: rect.left, width: rect.width });
-      else if (align === "right") setPos({ top, right: window.innerWidth - rect.right });
+      else if (align === "right")
+        setPos({ top, right: window.innerWidth - rect.right });
       else setPos({ top, left: rect.left });
     };
     measure();
@@ -138,7 +136,8 @@ export function Dropdown({
       const target = e.target as Node;
       // The panel lives in a portal outside `ref`, so check it too — otherwise a
       // click on a menu item would read as "outside" and close before it fires.
-      if (ref.current?.contains(target) || panelRef.current?.contains(target)) return;
+      if (ref.current?.contains(target) || panelRef.current?.contains(target))
+        return;
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -171,10 +170,13 @@ export function Dropdown({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         onMouseEnter={(e) => {
-          if (!disabled) e.currentTarget.style.background = "var(--color-bg-hover)";
+          if (!disabled)
+            e.currentTarget.style.background = "var(--color-bg-hover)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = open ? "var(--color-bg-hover)" : "transparent";
+          e.currentTarget.style.background = open
+            ? "var(--color-bg-hover)"
+            : "transparent";
         }}
         style={{
           display: "inline-flex",
@@ -201,7 +203,11 @@ export function Dropdown({
       {open &&
         pos &&
         createPortal(
-          <div ref={panelRef} role="menu" style={panelStyle(pos, panelMinWidth)}>
+          <div
+            ref={panelRef}
+            role="menu"
+            style={panelStyle(pos, panelMinWidth)}
+          >
             {children(() => setOpen(false))}
           </div>,
           document.body,
@@ -234,7 +240,9 @@ export function DropdownItem({
         e.currentTarget.style.background = "var(--color-bg-elevated)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = active ? "var(--color-bg-selected)" : "transparent";
+        e.currentTarget.style.background = active
+          ? "var(--color-bg-selected)"
+          : "transparent";
       }}
       style={{
         display: "flex",
@@ -252,11 +260,25 @@ export function DropdownItem({
       }}
     >
       {leading !== undefined && (
-        <span style={{ display: "inline-flex", width: 14, flexShrink: 0, justifyContent: "center" }}>
+        <span
+          style={{
+            display: "inline-flex",
+            width: 14,
+            flexShrink: 0,
+            justifyContent: "center",
+          }}
+        >
           {leading}
         </span>
       )}
-      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span
+        style={{
+          flex: 1,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
         {children}
       </span>
     </button>
@@ -285,7 +307,11 @@ export function DropdownLabel({ children }: { children: ReactNode }) {
 export function DropdownDivider() {
   return (
     <div
-      style={{ height: 1, margin: "var(--space-1) 0", background: "var(--color-border-subtle)" }}
+      style={{
+        height: 1,
+        margin: "var(--space-1) 0",
+        background: "var(--color-border-subtle)",
+      }}
     />
   );
 }

@@ -20,6 +20,36 @@ function splitMessage(message: string): { subject: string; body: string } {
   };
 }
 
+function DetachedFastForwardRecovery({ oid, listFastForwardableBranches, onFastForward, committing, repoHookRunning }: {
+  oid: string;
+  listFastForwardableBranches: (target: string) => Promise<string[]>;
+  onFastForward: (branch: string) => void;
+  committing: boolean;
+  repoHookRunning: boolean;
+}) {
+  const [branches, setBranches] = useState<string[]>([]);
+
+  useEffect(() => {
+    listFastForwardableBranches(oid).then(setBranches).catch(() => setBranches([]));
+  }, [oid, listFastForwardableBranches]);
+
+  if (branches.length === 0) return null;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+      <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
+        Or advance an existing branch to this commit and switch to it:
+      </div>
+      {branches.map((branch) => (
+        <Button key={branch} variant="secondary" fullWidth disabled={committing || repoHookRunning}
+          onClick={() => onFastForward(branch)} style={{ fontFamily: "var(--font-family-mono)" }}>
+          Fast-forward {branch} &amp; switch
+        </Button>
+      ))}
+    </div>
+  );
+}
+
 export function CommitForm({
   stagedCount,
   onCommitted,
@@ -55,22 +85,11 @@ export function CommitForm({
   // tests), which is not the detached case.
   const detached = !!currentRepo && currentRepo.headBranch === null;
   const [branchName, setBranchName] = useState("");
-  // Existing local branches that this detached commit could fast-forward — the
-  // recovery for "I committed on a detached HEAD; advance main to it".
-  const [ffBranches, setFfBranches] = useState<string[]>([]);
 
   useEffect(() => {
     loadIdentity().catch((e: unknown) => setError(String(e)));
     loadHeadCommit().catch((e: unknown) => setError(String(e)));
   }, [loadIdentity, loadHeadCommit]);
-
-  useEffect(() => {
-    if (detached && headCommit?.oid) {
-      listFastForwardableBranches(headCommit.oid).then(setFfBranches).catch(() => setFfBranches([]));
-    } else {
-      setFfBranches([]);
-    }
-  }, [detached, headCommit?.oid, listFastForwardableBranches]);
 
   // Amend is only offered for a local (not-yet-pushed) tip commit.
   const canAmend = !!headCommit && !headCommit.pushed;
@@ -361,24 +380,11 @@ export function CommitForm({
         )}
       </div>
 
-      {detached && ffBranches.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-          <div style={{ fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
-            Or advance an existing branch to this commit and switch to it:
-          </div>
-          {ffBranches.map((b) => (
-            <Button
-              key={b}
-              variant="secondary"
-              fullWidth
-              disabled={committing || repoHookRunning}
-              onClick={() => void handleFastForwardAndSwitch(b)}
-              style={{ fontFamily: "var(--font-family-mono)" }}
-            >
-              Fast-forward {b} &amp; switch
-            </Button>
-          ))}
-        </div>
+      {detached && headCommit?.oid && (
+        <DetachedFastForwardRecovery key={headCommit.oid} oid={headCommit.oid}
+          listFastForwardableBranches={listFastForwardableBranches}
+          onFastForward={(branch) => void handleFastForwardAndSwitch(branch)}
+          committing={committing} repoHookRunning={repoHookRunning} />
       )}
 
       {confirmReset && (

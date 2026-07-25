@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom";
@@ -232,6 +232,28 @@ describe("CommitForm", () => {
 
       await waitFor(() => expect(fastForwardBranch).toHaveBeenCalledWith("main", "abc123"));
       expect(checkoutBranch).toHaveBeenCalledWith("main");
+    });
+
+    it("does not carry a previous detached HEAD's recovery branches into the next detached HEAD", async () => {
+      let resolveFirstLookup: (branches: string[]) => void;
+      const firstLookup = new Promise<string[]>((resolve) => { resolveFirstLookup = resolve; });
+      listFastForwardableBranches.mockImplementation((oid) =>
+        oid === "first" ? firstLookup : Promise.resolve(["release"]),
+      );
+      detach();
+      useWorkingTreeStore.setState({ headCommit: { oid: "first", message: "m", pushed: false } });
+      const { rerender } = render(<CommitForm stagedCount={1} />);
+      act(() => { useRepoStore.setState({ currentRepo: { name: "r", path: "/r", headBranch: "main" } }); });
+      rerender(<CommitForm stagedCount={1} />);
+      act(() => {
+        detach();
+        useWorkingTreeStore.setState({ headCommit: { oid: "second", message: "m", pushed: false } });
+      });
+      rerender(<CommitForm stagedCount={1} />);
+      resolveFirstLookup!(["main"]);
+
+      expect(await screen.findByRole("button", { name: /fast-forward release & switch/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /fast-forward main & switch/i })).not.toBeInTheDocument();
     });
 
     it("Cmd+Enter from the summary input routes through branch creation, not a bare commit, while detached", async () => {

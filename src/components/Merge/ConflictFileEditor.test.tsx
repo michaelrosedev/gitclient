@@ -22,7 +22,13 @@ const file: ConflictedFile = {
   baseContent: "shared line\nbase text\ntrailing line",
   seededResult,
   conflictBlocks: [
-    { startLine: 2, midLine: 4, endLine: 6, oursText: "current text\n", theirsText: "source text\n" },
+    {
+      startLine: 2,
+      midLine: 4,
+      endLine: 6,
+      oursText: "current text\n",
+      theirsText: "source text\n",
+    },
   ],
 };
 
@@ -34,7 +40,9 @@ function getResultPaneText(container: HTMLElement): string {
 
 describe("ConflictFileEditor", () => {
   it("renders the source, current, and result panes seeded with the right content", async () => {
-    const { container } = render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />);
+    const { container } = render(
+      <ConflictFileEditor file={file} onMarkResolved={vi.fn()} />,
+    );
 
     expect(screen.getByText("Source")).toBeInTheDocument();
     expect(screen.getByText("Current")).toBeInTheDocument();
@@ -51,15 +59,25 @@ describe("ConflictFileEditor", () => {
     render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Accept source" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Accept current" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Accept source" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Accept current" }),
+      ).toBeInTheDocument();
     });
   });
 
   it("replaces the conflict markers with the current side's text when Accept current is clicked", async () => {
-    const { container } = render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />);
+    const { container } = render(
+      <ConflictFileEditor file={file} onMarkResolved={vi.fn()} />,
+    );
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Accept current" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Accept current" }),
+      ).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Accept current" }));
 
     await waitFor(() => {
@@ -71,9 +89,15 @@ describe("ConflictFileEditor", () => {
   });
 
   it("replaces the conflict markers with the source side's text when Accept source is clicked", async () => {
-    const { container } = render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />);
+    const { container } = render(
+      <ConflictFileEditor file={file} onMarkResolved={vi.fn()} />,
+    );
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Accept source" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Accept source" }),
+      ).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Accept source" }));
 
     await waitFor(() => {
@@ -85,7 +109,9 @@ describe("ConflictFileEditor", () => {
   });
 
   it("decorates the changed characters on the source and current sides", async () => {
-    const { container } = render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />);
+    const { container } = render(
+      <ConflictFileEditor file={file} onMarkResolved={vi.fn()} />,
+    );
 
     await waitFor(() => {
       expect(container.querySelector(".cm-diff-add")).toBeInTheDocument(); // source side
@@ -94,7 +120,9 @@ describe("ConflictFileEditor", () => {
   });
 
   it("renders per-line selection checkboxes on the conflict lines", async () => {
-    const { container } = render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />);
+    const { container } = render(
+      <ConflictFileEditor file={file} onMarkResolved={vi.fn()} />,
+    );
 
     await waitFor(() => {
       const boxes = container.querySelectorAll(".cm-select-checkbox");
@@ -104,10 +132,14 @@ describe("ConflictFileEditor", () => {
   });
 
   it("composes the result from an individually selected source line", async () => {
-    const { container } = render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />);
+    const { container } = render(
+      <ConflictFileEditor file={file} onMarkResolved={vi.fn()} />,
+    );
 
     const sourceBox = await waitFor(() => {
-      const boxes = container.querySelectorAll<HTMLInputElement>(".cm-select-checkbox");
+      const boxes = container.querySelectorAll<HTMLInputElement>(
+        ".cm-select-checkbox",
+      );
       expect(boxes.length).toBe(2);
       return boxes[0]!; // Source pane renders first, and boxes.length === 2 above
     });
@@ -126,7 +158,11 @@ describe("ConflictFileEditor", () => {
     const onMarkResolved = vi.fn<(path: string, content: string) => void>();
     render(<ConflictFileEditor file={file} onMarkResolved={onMarkResolved} />);
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Accept current" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Accept current" }),
+      ).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Accept current" }));
     fireEvent.click(screen.getByRole("button", { name: "Mark resolved" }));
 
@@ -135,7 +171,9 @@ describe("ConflictFileEditor", () => {
       // toHaveBeenCalledTimes(1) above guarantees calls[0] exists.
       const [path, content] = onMarkResolved.mock.calls[0]!;
       expect(path).toBe("src/lib.rs");
-      expect(content).toBe(["shared line", "current text", "trailing line"].join("\n"));
+      expect(content).toBe(
+        ["shared line", "current text", "trailing line"].join("\n"),
+      );
     });
   });
 
@@ -158,23 +196,39 @@ describe("ConflictFileEditor", () => {
       baseContent: "alpha\nbeta base\ngamma",
       seededResult: seededResultB,
       conflictBlocks: [
-        { startLine: 2, midLine: 4, endLine: 6, oursText: "beta ours\n", theirsText: "beta theirs\n" },
+        {
+          startLine: 2,
+          midLine: 4,
+          endLine: 6,
+          oursText: "beta ours\n",
+          theirsText: "beta theirs\n",
+        },
       ],
     };
 
-    const { rerender } = render(<ConflictFileEditor file={fileA} onMarkResolved={vi.fn()} />);
+    const { rerender } = render(
+      <ConflictFileEditor file={fileA} onMarkResolved={vi.fn()} />,
+    );
     await waitFor(() => {
-      expect(screen.getByTestId("result-pane")).toHaveTextContent("<<<<<<< HEAD");
+      expect(screen.getByTestId("result-pane")).toHaveTextContent(
+        "<<<<<<< HEAD",
+      );
     });
 
     rerender(<ConflictFileEditor file={fileB} onMarkResolved={vi.fn()} />);
 
     await waitFor(() => {
       // The CodeMirror doc itself is rebuilt correctly on a path change...
-      expect(screen.getByTestId("result-pane")).not.toHaveTextContent("current text");
-      expect(screen.getByTestId("result-pane")).not.toHaveTextContent("source text");
+      expect(screen.getByTestId("result-pane")).not.toHaveTextContent(
+        "current text",
+      );
+      expect(screen.getByTestId("result-pane")).not.toHaveTextContent(
+        "source text",
+      );
       expect(screen.getByTestId("result-pane")).toHaveTextContent("beta ours");
-      expect(screen.getByTestId("result-pane")).toHaveTextContent("beta theirs");
+      expect(screen.getByTestId("result-pane")).toHaveTextContent(
+        "beta theirs",
+      );
     });
 
     // ...but the freshly-switched-to file's still-unresolved block must not be
@@ -184,10 +238,59 @@ describe("ConflictFileEditor", () => {
     expect(conflictLabel.textContent).not.toContain("resolved");
   });
 
-  it("rebuilds the result doc when seededResult changes for the same file (resolved externally mid-merge)", async () => {
-    const { rerender } = render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />);
+  it("starts a newly selected conflict file with its seeded result and no selections from the previous file", async () => {
+    const fileB: ConflictedFile = {
+      ...file,
+      path: "src/second.rs",
+      oursContent: "shared second\nsecond ours\ntrailing second",
+      theirsContent: "shared second\nsecond source\ntrailing second",
+      baseContent: "shared second\nsecond base\ntrailing second",
+      seededResult:
+        "shared second\n<<<<<<< HEAD\nsecond ours\n=======\nsecond source\n>>>>>>> feature\ntrailing second",
+      conflictBlocks: [
+        {
+          startLine: 2,
+          midLine: 4,
+          endLine: 6,
+          oursText: "second ours\n",
+          theirsText: "second source\n",
+        },
+      ],
+    };
+    const { container, rerender } = render(
+      <ConflictFileEditor file={file} onMarkResolved={vi.fn()} />,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Accept current" }),
+      ).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Accept current" }));
+    await waitFor(() =>
+      expect(getResultPaneText(container)).not.toContain("<<<<<<< HEAD"),
+    );
+
+    rerender(<ConflictFileEditor file={fileB} onMarkResolved={vi.fn()} />);
+
     await waitFor(() => {
-      expect(screen.getByTestId("result-pane")).toHaveTextContent("<<<<<<< HEAD");
+      expect(getResultPaneText(container)).toContain("<<<<<<< HEAD");
+      const boxes = container.querySelectorAll<HTMLInputElement>(
+        ".cm-select-checkbox",
+      );
+      expect(boxes).toHaveLength(2);
+      expect([...boxes].every((box) => !box.checked)).toBe(true);
+    });
+  });
+
+  it("rebuilds the result doc when seededResult changes for the same file (resolved externally mid-merge)", async () => {
+    const { rerender } = render(
+      <ConflictFileEditor file={file} onMarkResolved={vi.fn()} />,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("result-pane")).toHaveTextContent(
+        "<<<<<<< HEAD",
+      );
     });
 
     const resolvedExternally: ConflictedFile = {
@@ -195,26 +298,44 @@ describe("ConflictFileEditor", () => {
       seededResult: "shared line\ncurrent text\ntrailing line",
       conflictBlocks: [],
     };
-    rerender(<ConflictFileEditor file={resolvedExternally} onMarkResolved={vi.fn()} />);
+    rerender(
+      <ConflictFileEditor file={resolvedExternally} onMarkResolved={vi.fn()} />,
+    );
 
     await waitFor(() => {
-      expect(screen.getByTestId("result-pane")).not.toHaveTextContent("<<<<<<< HEAD");
-      expect(screen.getByTestId("result-pane")).toHaveTextContent("current text");
+      expect(screen.getByTestId("result-pane")).not.toHaveTextContent(
+        "<<<<<<< HEAD",
+      );
+      expect(screen.getByTestId("result-pane")).toHaveTextContent(
+        "current text",
+      );
     });
   });
 
   it("reports dirty via onDirtyChange when the result diverges from the seeded text via a real editor edit", async () => {
     const onDirtyChange = vi.fn();
-    render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} onDirtyChange={onDirtyChange} />);
+    render(
+      <ConflictFileEditor
+        file={file}
+        onMarkResolved={vi.fn()}
+        onDirtyChange={onDirtyChange}
+      />,
+    );
 
     // Mount seeds resultContent === file.seededResult, so the initial report is "clean".
-    await waitFor(() => expect(onDirtyChange).toHaveBeenCalledWith("src/lib.rs", false));
+    await waitFor(() =>
+      expect(onDirtyChange).toHaveBeenCalledWith("src/lib.rs", false),
+    );
     onDirtyChange.mockClear();
 
     // "Accept current" dispatches a real change into the live CodeMirror
     // EditorView (the same `updateListener`/`docChanged` path a keystroke
     // takes) — this is not a mocked/simulated dirty flag.
-    await waitFor(() => expect(screen.getByRole("button", { name: "Accept current" })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Accept current" }),
+      ).toBeInTheDocument(),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Accept current" }));
 
     await waitFor(() => {
@@ -227,7 +348,13 @@ describe("ConflictFileEditor", () => {
       render(<ConflictFileEditor file={file} onMarkResolved={vi.fn()} />),
     ).not.toThrow();
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Accept current" })).toBeInTheDocument());
-    expect(() => fireEvent.click(screen.getByRole("button", { name: "Accept current" }))).not.toThrow();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Accept current" }),
+      ).toBeInTheDocument(),
+    );
+    expect(() =>
+      fireEvent.click(screen.getByRole("button", { name: "Accept current" })),
+    ).not.toThrow();
   });
 });

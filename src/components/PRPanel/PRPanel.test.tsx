@@ -107,6 +107,29 @@ describe("PRPanel", () => {
     expect(useGithubStore.getState().prDraft).toBeNull();
   });
 
+  it("opens the New PR form when a draft arrives after the panel mounts", async () => {
+    mockInvoke.mockResolvedValueOnce([]);
+    useRepoStore.setState({
+      currentRepo: { name: "gitclient", path: "/repo", headBranch: "feat/x" },
+      recentRepos: [],
+      branches: [],
+    });
+
+    render(<PRPanel />);
+
+    await screen.findByText(/no open pull requests/i);
+    expect(screen.queryByPlaceholderText(/title/i)).toBeNull();
+
+    act(() => {
+      useGithubStore.setState({
+        prDraft: { head: "feat/later", base: "release" },
+      });
+    });
+
+    expect(await screen.findByDisplayValue("feat/later")).toBeTruthy();
+    expect(screen.getByDisplayValue("release")).toBeTruthy();
+  });
+
   it("shows a message when no GitHub remote is detected", () => {
     useGithubStore.setState({ remoteInfo: null });
 
@@ -142,6 +165,29 @@ describe("PRPanel", () => {
     await waitFor(() =>
       expect(screen.queryByText(/rate limited/i)).not.toBeInTheDocument(),
     );
+  });
+
+  it("clears a previous load error and reloads when the GitHub repository changes", async () => {
+    mockInvoke.mockRejectedValueOnce(new Error("rate limited"));
+    render(<PRPanel />);
+    expect(await screen.findByText(/rate limited/i)).toBeInTheDocument();
+
+    const pendingReload = new Promise<never>(() => {});
+    mockInvoke.mockImplementationOnce(() => pendingReload);
+    act(() => {
+      useGithubStore.setState({
+        remoteInfo: {
+          host: "github.com",
+          owner: "mike",
+          repo: "another-repo",
+          protocol: "https",
+        },
+      });
+    });
+
+    await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/rate limited/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/mike\/another-repo/i)).toBeInTheDocument();
   });
 
   it("reloads pull requests when the active repo path changes, even with the same remote host", async () => {

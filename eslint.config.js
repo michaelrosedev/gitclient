@@ -21,21 +21,25 @@ const noDriftRules = [
     // Re-declaring the top-level view union.
     selector:
       "TSUnionType:has(TSLiteralType > Literal[value='history']):has(TSLiteralType > Literal[value='prs']):has(TSLiteralType > Literal[value='settings'])",
-    message: "Don't re-declare the view union — import `View` from `types/view`.",
+    message:
+      "Don't re-declare the view union — import `View` from `types/view`.",
   },
   {
     // The working-tree sentinel is paired with the Rust graph layout; use the
     // named const so a typo can't silently break selection.
     selector: "Literal[value='WORKING_TREE']",
     message:
-      "Use `WORKING_TREE_OID` from `stores/graphStore` instead of the bare \"WORKING_TREE\" sentinel.",
+      'Use `WORKING_TREE_OID` from `stores/graphStore` instead of the bare "WORKING_TREE" sentinel.',
   },
 ];
 
 export default tseslint.config(
   { ignores: ["dist", "src-tauri"] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
+    ],
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: 2020,
@@ -50,10 +54,7 @@ export default tseslint.config(
       "react-refresh": reactRefresh,
     },
     rules: {
-      // v7 adds React Compiler migration diagnostics to its recommended preset.
-      // Keep the existing hooks policy until those broader refactors are planned.
-      "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },

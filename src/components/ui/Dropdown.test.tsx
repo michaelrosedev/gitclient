@@ -3,12 +3,16 @@ import { describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom";
 import { Dropdown, DropdownItem } from "./Dropdown";
 
-function Example({ onOpenChange }: { onOpenChange?: (o: boolean) => void } = {}) {
+function Example({
+  onOpenChange,
+}: { onOpenChange?: (o: boolean) => void } = {}) {
   return (
-    <Dropdown ariaLabel="Picker" trigger={<span>Trigger</span>} onOpenChange={onOpenChange}>
-      {(close) => (
-        <DropdownItem onSelect={close}>Item one</DropdownItem>
-      )}
+    <Dropdown
+      ariaLabel="Picker"
+      trigger={<span>Trigger</span>}
+      onOpenChange={onOpenChange}
+    >
+      {(close) => <DropdownItem onSelect={close}>Item one</DropdownItem>}
     </Dropdown>
   );
 }
@@ -70,5 +74,34 @@ describe("Dropdown", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("re-measures and repositions the portaled panel when reopened", () => {
+    const rect = vi.fn<() => DOMRect>();
+    rect.mockReturnValue({
+      bottom: 40,
+      left: 12,
+      right: 112,
+      width: 100,
+    } as DOMRect);
+    render(<Example />);
+    const trigger = screen.getByRole("button", { name: "Picker" });
+    trigger.parentElement!.getBoundingClientRect = rect;
+
+    fireEvent.click(trigger);
+    expect(screen.getByRole("menu")).toHaveStyle({ top: "42px", left: "12px" });
+
+    fireEvent.click(trigger);
+    expect(screen.queryByRole("menu")).toBeNull();
+
+    rect.mockReturnValue({
+      bottom: 80,
+      left: 32,
+      right: 132,
+      width: 100,
+    } as DOMRect);
+    fireEvent.click(trigger);
+
+    expect(screen.getByRole("menu")).toHaveStyle({ top: "82px", left: "32px" });
   });
 });

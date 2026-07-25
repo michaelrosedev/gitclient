@@ -22,8 +22,6 @@ export function ResizeHandle({
 }) {
   const dragging = useRef(false);
   const last = useRef(0);
-  const onResizeRef = useRef(onResize);
-  onResizeRef.current = onResize;
   const [active, setActive] = useState(false); // hovered or dragging (line highlight)
 
   const horizontal = orientation === "horizontal";
@@ -35,7 +33,7 @@ export function ResizeHandle({
       const pos = horizontal ? e.clientY : e.clientX;
       const delta = pos - last.current;
       last.current = pos;
-      if (delta !== 0) onResizeRef.current(delta);
+      if (delta !== 0) onResize(delta);
     };
     const stop = () => {
       if (!dragging.current) return;
@@ -50,7 +48,7 @@ export function ResizeHandle({
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", stop);
     };
-  }, [horizontal]);
+  }, [horizontal, onResize]);
 
   return (
     <div
@@ -75,7 +73,12 @@ export function ResizeHandle({
         cursor,
         background: "transparent",
         ...(horizontal
-          ? { height: 7, width: "100%", flexDirection: "column", justifyContent: "center" }
+          ? {
+              height: 7,
+              width: "100%",
+              flexDirection: "column",
+              justifyContent: "center",
+            }
           : { width: 7, justifyContent: "center" }),
         ...style,
       }}
@@ -84,9 +87,13 @@ export function ResizeHandle({
           brightens to the accent while hovered/dragging to signal it's draggable. */}
       <div
         style={{
-          background: active ? "var(--color-accent-primary)" : "var(--color-border-default)",
+          background: active
+            ? "var(--color-accent-primary)"
+            : "var(--color-border-default)",
           transition: "background var(--duration-fast) var(--ease-default)",
-          ...(horizontal ? { height: 1, width: "100%" } : { width: 1, alignSelf: "stretch" }),
+          ...(horizontal
+            ? { height: 1, width: "100%" }
+            : { width: 1, alignSelf: "stretch" }),
         }}
       />
     </div>

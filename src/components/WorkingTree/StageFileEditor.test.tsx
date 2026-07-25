@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom";
 import { Decoration } from "@codemirror/view";
@@ -94,7 +100,8 @@ describe("StageFileEditor", () => {
     const { container } = renderEditor(inserted);
 
     await waitFor(() => {
-      const buttons = container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle");
+      const buttons =
+        container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle");
       expect(buttons.length).toBe(1);
       expect(buttons[0]!.textContent).toBe("+");
     });
@@ -104,9 +111,72 @@ describe("StageFileEditor", () => {
     const { container } = renderEditor(inserted, { stageMode: "staged" });
 
     await waitFor(() => {
-      const buttons = container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle");
+      const buttons =
+        container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle");
       expect(buttons.length).toBe(1);
       expect(buttons[0]!.textContent).toBe("−");
+    });
+  });
+
+  it("reseeds staged rows when the file or stage mode changes", async () => {
+    const { container, rerender } = render(
+      <StageFileEditor
+        path="first.txt"
+        contents={twoChanges}
+        stageMode="unstaged"
+      />,
+    );
+    const firstToggles = await waitFor(() => {
+      const buttons = Array.from(
+        container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle"),
+      );
+      expect(buttons.length).toBeGreaterThanOrEqual(2);
+      return buttons;
+    });
+    fireEvent.click(firstToggles[0]!);
+    await waitFor(() =>
+      expect(
+        container.querySelector<HTMLButtonElement>(".cm-stage-toggle")!
+          .textContent,
+      ).toBe("−"),
+    );
+
+    rerender(
+      <StageFileEditor
+        path="second.txt"
+        contents={twoChanges}
+        stageMode="unstaged"
+      />,
+    );
+    await waitFor(() => {
+      const buttons =
+        container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle");
+      expect(
+        Array.from(buttons).every((button) => button.textContent === "+"),
+      ).toBe(true);
+    });
+    fireEvent.click(
+      container.querySelector<HTMLButtonElement>(".cm-stage-toggle")!,
+    );
+    await waitFor(() =>
+      expect(
+        container.querySelector<HTMLButtonElement>(".cm-stage-toggle")!
+          .textContent,
+      ).toBe("−"),
+    );
+    rerender(
+      <StageFileEditor
+        path="second.txt"
+        contents={twoChanges}
+        stageMode="staged"
+      />,
+    );
+    await waitFor(() => {
+      const buttons =
+        container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle");
+      expect(
+        Array.from(buttons).every((button) => button.textContent === "−"),
+      ).toBe(true);
     });
   });
 
@@ -114,9 +184,15 @@ describe("StageFileEditor", () => {
     const { container } = renderEditor(inserted);
 
     await waitFor(() => {
-      expect(pane(container, "worktree-pane").querySelector(".cm-diff-add-line")).not.toBeNull();
-      expect(pane(container, "head-pane").querySelector(".cm-diff-placeholder-line")).not.toBeNull();
-      expect(pane(container, "head-pane").querySelector(".cm-diff-add-line")).toBeNull();
+      expect(
+        pane(container, "worktree-pane").querySelector(".cm-diff-add-line"),
+      ).not.toBeNull();
+      expect(
+        pane(container, "head-pane").querySelector(".cm-diff-placeholder-line"),
+      ).not.toBeNull();
+      expect(
+        pane(container, "head-pane").querySelector(".cm-diff-add-line"),
+      ).toBeNull();
     });
   });
 
@@ -124,9 +200,17 @@ describe("StageFileEditor", () => {
     const { container } = renderEditor(removed);
 
     await waitFor(() => {
-      expect(pane(container, "head-pane").querySelector(".cm-diff-del-line")).not.toBeNull();
-      expect(pane(container, "worktree-pane").querySelector(".cm-diff-placeholder-line")).not.toBeNull();
-      expect(pane(container, "worktree-pane").querySelector(".cm-diff-del-line")).toBeNull();
+      expect(
+        pane(container, "head-pane").querySelector(".cm-diff-del-line"),
+      ).not.toBeNull();
+      expect(
+        pane(container, "worktree-pane").querySelector(
+          ".cm-diff-placeholder-line",
+        ),
+      ).not.toBeNull();
+      expect(
+        pane(container, "worktree-pane").querySelector(".cm-diff-del-line"),
+      ).toBeNull();
     });
   });
 
@@ -148,7 +232,10 @@ describe("StageFileEditor", () => {
 
   it("unstages a line immediately when its '−' is clicked (staged view)", async () => {
     const onApplyIndex = vi.fn();
-    const { container } = renderEditor(inserted, { stageMode: "staged", onApplyIndex });
+    const { container } = renderEditor(inserted, {
+      stageMode: "staged",
+      onApplyIndex,
+    });
 
     const toggle = await waitFor(() => {
       const b = container.querySelector<HTMLButtonElement>(".cm-stage-toggle");
@@ -166,7 +253,9 @@ describe("StageFileEditor", () => {
     const onApplyIndex = vi.fn();
     const { container } = renderEditor(inserted, { onApplyIndex });
 
-    await waitFor(() => expect(container.querySelector(".cm-stage-toggle")).not.toBeNull());
+    await waitFor(() =>
+      expect(container.querySelector(".cm-stage-toggle")).not.toBeNull(),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Stage all" }));
 
     expect(onApplyIndex.mock.calls[0]).toEqual(["f.txt", "a\nb\nc\n"]);
@@ -174,9 +263,14 @@ describe("StageFileEditor", () => {
 
   it("unstages every line via 'Unstage all' in the staged view", async () => {
     const onApplyIndex = vi.fn();
-    const { container } = renderEditor(inserted, { stageMode: "staged", onApplyIndex });
+    const { container } = renderEditor(inserted, {
+      stageMode: "staged",
+      onApplyIndex,
+    });
 
-    await waitFor(() => expect(container.querySelector(".cm-stage-toggle")).not.toBeNull());
+    await waitFor(() =>
+      expect(container.querySelector(".cm-stage-toggle")).not.toBeNull(),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Unstage all" }));
 
     expect(onApplyIndex.mock.calls[0]).toEqual(["f.txt", "a\nc\n"]);
@@ -198,7 +292,9 @@ describe("StageFileEditor", () => {
     const { container } = renderEditor(twoChanges, { onApplyIndex });
 
     const toggles = await waitFor(() => {
-      const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle"));
+      const buttons = Array.from(
+        container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle"),
+      );
       expect(buttons.length).toBeGreaterThanOrEqual(2);
       return buttons;
     });
@@ -222,9 +318,15 @@ describe("StageFileEditor", () => {
     expect(pane(container, "head-pane")).toBeInTheDocument();
     expect(pane(container, "worktree-pane")).toBeInTheDocument();
     expect(container.querySelector('[data-testid="inline-pane"]')).toBeNull();
-    expect(screen.getByRole("button", { name: "Side-by-side view" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Inline view" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Hunk view" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Side-by-side view" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Inline view" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Hunk view" }),
+    ).toBeInTheDocument();
   });
 
   it("switches to a single unified pane in inline view", () => {
@@ -255,7 +357,9 @@ describe("StageFileEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Inline view" }));
 
     const toggle = await waitFor(() => {
-      const b = container.querySelector<HTMLButtonElement>('[data-testid="inline-pane"] .cm-stage-toggle');
+      const b = container.querySelector<HTMLButtonElement>(
+        '[data-testid="inline-pane"] .cm-stage-toggle',
+      );
       expect(b).not.toBeNull();
       return b!;
     });
@@ -294,7 +398,9 @@ describe("StageFileEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hunk view" }));
 
     const toggle = await waitFor(() => {
-      const b = container.querySelector<HTMLButtonElement>('[data-testid="hunk-pane"] .cm-stage-toggle');
+      const b = container.querySelector<HTMLButtonElement>(
+        '[data-testid="hunk-pane"] .cm-stage-toggle',
+      );
       expect(b).not.toBeNull();
       return b!;
     });
@@ -345,26 +451,33 @@ describe("StageFileEditor", () => {
       first.unmount();
 
       renderEditor(modified);
-      expect(screen.getByRole("button", { name: "Wrap long lines" })).toHaveAttribute(
-        "aria-pressed",
-        "false",
-      );
+      expect(
+        screen.getByRole("button", { name: "Wrap long lines" }),
+      ).toHaveAttribute("aria-pressed", "false");
     });
 
     it("hides whitespace-only changes when the whitespace toggle is on", async () => {
       const { container } = renderEditor(whitespaceOnly);
 
       await waitFor(() =>
-        expect(container.querySelectorAll(".cm-stage-toggle").length).toBeGreaterThan(0),
+        expect(
+          container.querySelectorAll(".cm-stage-toggle").length,
+        ).toBeGreaterThan(0),
       );
 
-      const btn = screen.getByRole("button", { name: "Hide whitespace-only changes" });
+      const btn = screen.getByRole("button", {
+        name: "Hide whitespace-only changes",
+      });
       expect(btn).toHaveAttribute("aria-pressed", "false");
       fireEvent.click(btn);
 
-      await waitFor(() => expect(container.querySelectorAll(".cm-stage-toggle").length).toBe(0));
+      await waitFor(() =>
+        expect(container.querySelectorAll(".cm-stage-toggle").length).toBe(0),
+      );
       expect(btn).toHaveAttribute("aria-pressed", "true");
-      expect(localStorage.getItem("stageFileEditor.ignoreWhitespace")).toBe("true");
+      expect(localStorage.getItem("stageFileEditor.ignoreWhitespace")).toBe(
+        "true",
+      );
     });
 
     it("keeps a real change visible with the whitespace toggle on", async () => {
@@ -372,7 +485,9 @@ describe("StageFileEditor", () => {
       const { container } = renderEditor(modified);
 
       await waitFor(() =>
-        expect(container.querySelectorAll(".cm-stage-toggle").length).toBeGreaterThan(0),
+        expect(
+          container.querySelectorAll(".cm-stage-toggle").length,
+        ).toBeGreaterThan(0),
       );
     });
   });
@@ -397,16 +512,23 @@ describe("StageFileEditor", () => {
 
     it("previews an image instead of a text diff, offering whole-file staging", () => {
       const onStageWholeFile = vi.fn();
-      const { container } = renderEditor(addedImage, { path: "logo.png", onStageWholeFile });
+      const { container } = renderEditor(addedImage, {
+        path: "logo.png",
+        onStageWholeFile,
+      });
 
-      expect(container.querySelector('[data-testid="image-diff"]')).not.toBeNull();
+      expect(
+        container.querySelector('[data-testid="image-diff"]'),
+      ).not.toBeNull();
       expect(container.querySelector('[data-testid="head-pane"]')).toBeNull();
       expect(screen.queryByRole("button", { name: "Inline view" })).toBeNull();
 
       const img = screen.getByAltText<HTMLImageElement>(/preview/i);
       expect(img.src).toBe("data:image/png;base64,AAAA");
 
-      fireEvent.click(screen.getByRole("button", { name: /stage whole file/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /stage whole file/i }),
+      );
       expect(onStageWholeFile).toHaveBeenCalledWith("logo.png");
     });
 
@@ -421,8 +543,12 @@ describe("StageFileEditor", () => {
     });
 
     it("has no staging controls when read-only (commit view)", () => {
-      render(<StageFileEditor readOnly path="logo.png" contents={modifiedImage} />);
-      expect(screen.queryByRole("button", { name: /stage whole file/i })).toBeNull();
+      render(
+        <StageFileEditor readOnly path="logo.png" contents={modifiedImage} />,
+      );
+      expect(
+        screen.queryByRole("button", { name: /stage whole file/i }),
+      ).toBeNull();
     });
   });
 
@@ -440,19 +566,31 @@ describe("StageFileEditor", () => {
 
       expect(screen.getByText("Parent")).toBeInTheDocument();
       expect(screen.getByText("This commit")).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "Stage all" })).not.toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "Unstage all" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Stage all" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Unstage all" }),
+      ).not.toBeInTheDocument();
       await waitFor(() => {
-        expect(pane(container, "head-pane").querySelector(".cm-diff-del-line")).not.toBeNull();
-        expect(pane(container, "worktree-pane").querySelector(".cm-diff-add-line")).not.toBeNull();
+        expect(
+          pane(container, "head-pane").querySelector(".cm-diff-del-line"),
+        ).not.toBeNull();
+        expect(
+          pane(container, "worktree-pane").querySelector(".cm-diff-add-line"),
+        ).not.toBeNull();
       });
       expect(container.querySelector(".cm-stage-toggle")).toBeNull();
     });
 
     it("keeps the split/inline view toggle", () => {
       render(<StageFileEditor readOnly path="f.txt" contents={modified} />);
-      expect(screen.getByRole("button", { name: "Side-by-side view" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Inline view" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Side-by-side view" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Inline view" }),
+      ).toBeInTheDocument();
     });
 
     it("renders a deletion (empty new side) as a diff rather than a fallback", async () => {
@@ -462,11 +600,15 @@ describe("StageFileEditor", () => {
         isBinary: false,
         worktreeExists: false,
       };
-      const { container } = render(<StageFileEditor readOnly path="f.txt" contents={deleted} />);
+      const { container } = render(
+        <StageFileEditor readOnly path="f.txt" contents={deleted} />,
+      );
 
       expect(screen.queryByText(/can't be staged/i)).not.toBeInTheDocument();
       await waitFor(() =>
-        expect(pane(container, "head-pane").querySelector(".cm-diff-del-line")).not.toBeNull(),
+        expect(
+          pane(container, "head-pane").querySelector(".cm-diff-del-line"),
+        ).not.toBeNull(),
       );
     });
 
@@ -478,11 +620,18 @@ describe("StageFileEditor", () => {
         worktreeExists: true,
       };
       render(
-        <StageFileEditor readOnly path="logo.png" contents={binary} onStageWholeFile={vi.fn()} />,
+        <StageFileEditor
+          readOnly
+          path="logo.png"
+          contents={binary}
+          onStageWholeFile={vi.fn()}
+        />,
       );
 
       expect(screen.getByText(/no preview/i)).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "Stage whole file" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Stage whole file" }),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -497,7 +646,9 @@ describe("StageFileEditor", () => {
     renderEditor(binary, { path: "logo.png", onStageWholeFile });
 
     expect(screen.getByText(/binary file/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Stage all" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Stage all" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Stage whole file" }));
     expect(onStageWholeFile).toHaveBeenCalledWith("logo.png");
   });
@@ -506,13 +657,20 @@ describe("StageFileEditor", () => {
     const onStageWholeFile = vi.fn();
     const huge: StageFileContents = {
       headContent: Array.from({ length: 5000 }, (_, i) => `h${i}`).join("\n"),
-      worktreeContent: Array.from({ length: 5000 }, (_, i) => `w${i}`).join("\n"),
+      worktreeContent: Array.from({ length: 5000 }, (_, i) => `w${i}`).join(
+        "\n",
+      ),
       isBinary: false,
       worktreeExists: true,
     };
-    const { container } = renderEditor(huge, { path: "bundle.min.js", onStageWholeFile });
+    const { container } = renderEditor(huge, {
+      path: "bundle.min.js",
+      onStageWholeFile,
+    });
 
-    expect(screen.getByText(/too large to diff line-by-line/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/too large to diff line-by-line/i),
+    ).toBeInTheDocument();
     expect(container.querySelector('[data-testid="head-pane"]')).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Stage whole file" }));
     expect(onStageWholeFile).toHaveBeenCalledWith("bundle.min.js");
@@ -524,28 +682,44 @@ describe("StageFileEditor", () => {
     // the rebuild doesn't stomp on it back to 0).
     const bigContent = (prefix: string) =>
       Array.from({ length: 400 }, (_, i) => `${prefix}${i}`).join("\n");
-    const lineNumberMapFor = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
+    const lineNumberMapFor = (n: number) =>
+      Array.from({ length: n }, (_, i) => i + 1);
 
-    function pane(content: string, changedLines: Set<number>, fileKey: string) {
+    function pane(
+      content: string,
+      changedLines: Set<number>,
+      fileKey: string,
+      {
+        stagedLines = new Set<number>(),
+        wrap = true,
+        onToggle = () => {},
+        lineNumberMap = lineNumberMapFor(400),
+      } = {},
+    ) {
       return (
         <ReadOnlyStagePane
           testId="head-pane"
           content={content}
           changedLines={changedLines}
-          stagedLines={new Set()}
-          onToggle={() => {}}
+          stagedLines={stagedLines}
+          onToggle={onToggle}
           decorations={Decoration.none}
-          lineNumberMap={lineNumberMapFor(400)}
+          lineNumberMap={lineNumberMap}
           language={null}
           fileKey={fileKey}
+          wrap={wrap}
         />
       );
     }
 
     it("keeps the scroll position when a line toggle causes new content/decorations to arrive", () => {
-      const { rerender } = render(pane(bigContent("a"), new Set([5]), "file-a.txt"));
+      const { rerender } = render(
+        pane(bigContent("a"), new Set([5]), "file-a.txt"),
+      );
 
-      const scroller = screen.getByTestId("head-pane").querySelector(".cm-scroller");
+      const scroller = screen
+        .getByTestId("head-pane")
+        .querySelector(".cm-scroller");
       expect(scroller).not.toBeNull();
       scroller!.scrollTop = 4000;
 
@@ -554,7 +728,9 @@ describe("StageFileEditor", () => {
       // exactly what happens on every stage/unstage click, but the SAME file.
       rerender(pane(bigContent("b"), new Set([6]), "file-a.txt"));
 
-      const newScroller = screen.getByTestId("head-pane").querySelector(".cm-scroller");
+      const newScroller = screen
+        .getByTestId("head-pane")
+        .querySelector(".cm-scroller");
       expect(newScroller).not.toBeNull();
       expect(newScroller!.scrollTop).toBeGreaterThan(3900); // did not snap back to 0
     });
@@ -565,18 +741,69 @@ describe("StageFileEditor", () => {
       // which — from the pane's perspective — presents new content/decorations
       // exactly like a same-file line toggle does. Only `fileKey` tells them
       // apart; without that check, file B would inherit file A's scroll.
-      const { rerender } = render(pane(bigContent("a"), new Set([5]), "file-a.txt"));
+      const { rerender } = render(
+        pane(bigContent("a"), new Set([5]), "file-a.txt"),
+      );
 
-      const scroller = screen.getByTestId("head-pane").querySelector(".cm-scroller");
+      const scroller = screen
+        .getByTestId("head-pane")
+        .querySelector(".cm-scroller");
       expect(scroller).not.toBeNull();
       scroller!.scrollTop = 4000;
 
       // A genuine file switch: different `fileKey`, different content.
       rerender(pane(bigContent("c"), new Set([2]), "file-b.txt"));
 
-      const newScroller = screen.getByTestId("head-pane").querySelector(".cm-scroller");
+      const newScroller = screen
+        .getByTestId("head-pane")
+        .querySelector(".cm-scroller");
       expect(newScroller).not.toBeNull();
       expect(newScroller!.scrollTop).toBe(0); // file B opens fresh, not at file A's position
+    });
+
+    it("keeps scroll and staged selection when wrapping is reconfigured", () => {
+      const changedLines = new Set([5]);
+      const stagedLines = new Set([5]);
+      const onToggle = vi.fn();
+      const lineNumberMap = lineNumberMapFor(400);
+      const { rerender } = render(
+        pane(bigContent("a"), changedLines, "file-a.txt", {
+          stagedLines,
+          wrap: true,
+          onToggle,
+          lineNumberMap,
+        }),
+      );
+      const scroller = screen
+        .getByTestId("head-pane")
+        .querySelector(".cm-scroller");
+      expect(scroller).not.toBeNull();
+      scroller!.scrollTop = 4000;
+      expect(
+        screen
+          .getByTestId("head-pane")
+          .querySelector<HTMLButtonElement>(".cm-stage-toggle")?.textContent,
+      ).toBe("−");
+
+      rerender(
+        pane(bigContent("a"), changedLines, "file-a.txt", {
+          stagedLines,
+          wrap: false,
+          onToggle,
+          lineNumberMap,
+        }),
+      );
+
+      const reconfiguredScroller = screen
+        .getByTestId("head-pane")
+        .querySelector(".cm-scroller");
+      expect(reconfiguredScroller).toBe(scroller);
+      expect(reconfiguredScroller!.scrollTop).toBeGreaterThan(3900);
+      expect(
+        screen
+          .getByTestId("head-pane")
+          .querySelector<HTMLButtonElement>(".cm-stage-toggle")?.textContent,
+      ).toBe("−");
     });
   });
 
@@ -608,15 +835,26 @@ describe("StageFileEditor", () => {
   it("shows a too-large message with no stage button in read-only mode", () => {
     const huge: StageFileContents = {
       headContent: Array.from({ length: 5000 }, (_, i) => `h${i}`).join("\n"),
-      worktreeContent: Array.from({ length: 5000 }, (_, i) => `w${i}`).join("\n"),
+      worktreeContent: Array.from({ length: 5000 }, (_, i) => `w${i}`).join(
+        "\n",
+      ),
       isBinary: false,
       worktreeExists: true,
     };
     render(
-      <StageFileEditor readOnly path="bundle.min.js" contents={huge} onStageWholeFile={vi.fn()} />,
+      <StageFileEditor
+        readOnly
+        path="bundle.min.js"
+        contents={huge}
+        onStageWholeFile={vi.fn()}
+      />,
     );
 
-    expect(screen.getByText(/too large to diff line-by-line/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Stage whole file" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/too large to diff line-by-line/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Stage whole file" }),
+    ).not.toBeInTheDocument();
   });
 });

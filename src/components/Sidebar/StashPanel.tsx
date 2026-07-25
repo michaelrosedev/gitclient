@@ -9,6 +9,12 @@ import { ConfirmDialog } from "../common/ConfirmDialog";
 
 export function StashPanel() {
   const activeRepoPath = useRepoStore((s) => s.activeRepoPath);
+
+  return <StashPanelForRepo key={activeRepoPath ?? "no-active-repository"} />;
+}
+
+function StashPanelForRepo() {
+  const activeRepoPath = useRepoStore((s) => s.activeRepoPath);
   const entries = useStashStore((s) => s.entries);
   const list = useStashStore((s) => s.list);
   const reset = useStashStore((s) => s.reset);
@@ -20,10 +26,9 @@ export function StashPanel() {
 
   useEffect(() => {
     // Clear immediately so the previous repo's stashes don't linger while the
-    // fresh list loads, and drop any pending drop-confirmation for the repo
-    // we're leaving.
+    // fresh list loads. The repo-keyed component boundary clears local
+    // confirmation state when switching repositories.
     reset();
-    setPendingDrop(null);
     list().catch((e: unknown) =>
       useToastStore.getState().error(String(e), { title: "Couldn't load stashes" }),
     );
