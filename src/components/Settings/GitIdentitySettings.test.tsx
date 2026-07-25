@@ -90,6 +90,36 @@ describe("GitIdentitySettings", () => {
     );
   });
 
+  it("resets whitespace edits when save confirms the same canonical identity", async () => {
+    const refreshedConfig = {
+      effective: { name: "Local Dev", email: "local@example.com" },
+      local: { name: "Local Dev", email: "local@example.com" },
+      global: { name: "Global Dev", email: "global@example.com" },
+    };
+    mockInvoke
+      .mockResolvedValueOnce(config)
+      .mockResolvedValueOnce(refreshedConfig);
+    render(<GitIdentitySettings />);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"),
+    );
+
+    fireEvent.change(screen.getByLabelText("Identity name"), {
+      target: { value: "  Local Dev  " },
+    });
+    fireEvent.change(screen.getByLabelText("Identity email"), {
+      target: { value: "  local@example.com  " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Identity name")).toHaveValue("Local Dev"),
+    );
+    expect(screen.getByLabelText("Identity email")).toHaveValue(
+      "local@example.com",
+    );
+  });
+
   it("saves the chosen scope's identity", async () => {
     mockInvoke.mockResolvedValueOnce(config); // get_identity_config
     mockInvoke.mockResolvedValueOnce({

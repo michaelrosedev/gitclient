@@ -59,6 +59,7 @@ const scopeIdentity = (
  */
 export function GitIdentitySettings() {
   const [config, setConfig] = useState<IdentityConfig | null>(null);
+  const [configRevision, setConfigRevision] = useState(0);
   const [scope, setScope] = useState<IdentityScope>("local");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export function GitIdentitySettings() {
     try {
       const updated = await setIdentity(name.trim(), email.trim(), scope);
       setConfig(updated);
+      setConfigRevision((revision) => revision + 1);
       toastSuccess(
         `Saved ${scope === "global" ? "global" : "repository"} identity`,
       );
@@ -128,6 +130,7 @@ export function GitIdentitySettings() {
           scope,
           initialIdentity.name,
           initialIdentity.email,
+          configRevision,
         ])}
         initialIdentity={initialIdentity}
         saving={saving}
