@@ -19,8 +19,20 @@ const fakeDetail: CommitDetailData = {
   committerTimestamp: 1000000000,
   parentOids: [],
   changedFiles: [
-    { path: "src/main.rs", oldPath: null, status: "Modified", additions: 5, deletions: 2 },
-    { path: "README.md", oldPath: null, status: "Added", additions: 10, deletions: 0 },
+    {
+      path: "src/main.rs",
+      oldPath: null,
+      status: "Modified",
+      additions: 5,
+      deletions: 2,
+    },
+    {
+      path: "README.md",
+      oldPath: null,
+      status: "Added",
+      additions: 10,
+      deletions: 0,
+    },
   ],
 };
 
@@ -41,7 +53,9 @@ describe("CommitDetail", () => {
     render(<CommitDetail oid="abc123" />);
 
     await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith("get_commit_diff", { oid: "abc123" });
+      expect(mockInvoke).toHaveBeenCalledWith("get_commit_diff", {
+        oid: "abc123",
+      });
     });
   });
 
@@ -110,7 +124,9 @@ describe("CommitDetail", () => {
     render(<CommitDetail oid="abc123def456" />);
 
     await waitFor(() =>
-      expect(error).toHaveBeenCalledWith("Error: no such commit", { title: "Couldn't load commit" }),
+      expect(error).toHaveBeenCalledWith("Error: no such commit", {
+        title: "Couldn't load commit",
+      }),
     );
   });
 
@@ -124,16 +140,24 @@ describe("CommitDetail", () => {
     fireEvent.click(await screen.findByText("src/main.rs"));
 
     await waitFor(() =>
-      expect(error).toHaveBeenCalledWith("Error: no such file", { title: "Couldn't load diff" }),
+      expect(error).toHaveBeenCalledWith("Error: no such file", {
+        title: "Couldn't load diff",
+      }),
     );
   });
 
   it("drops a stale diff response when the selected commit changed before it resolved", async () => {
     let resolveA: (v: CommitDetailData) => void;
-    const pendingA = new Promise<CommitDetailData>((r) => { resolveA = r; });
+    const pendingA = new Promise<CommitDetailData>((r) => {
+      resolveA = r;
+    });
     mockInvoke.mockImplementationOnce(() => pendingA);
     const { rerender } = render(<CommitDetail oid="A" />);
-    mockInvoke.mockResolvedValueOnce({ ...fakeDetail, oid: "B", message: "B's message" });
+    mockInvoke.mockResolvedValueOnce({
+      ...fakeDetail,
+      oid: "B",
+      message: "B's message",
+    });
     rerender(<CommitDetail oid="B" />);
     await screen.findByText("B's message");
     resolveA!({ ...fakeDetail, oid: "A", message: "A's message" });
@@ -142,5 +166,29 @@ describe("CommitDetail", () => {
     await waitFor(() => {
       expect(screen.queryByText("A's message")).not.toBeInTheDocument();
     });
+  });
+
+  it("clears the detail immediately when the selected commit is removed", async () => {
+    mockInvoke.mockResolvedValueOnce(fakeDetail);
+    const { rerender } = render(<CommitDetail oid="abc123def456" />);
+
+    await screen.findByText("fix: do the thing");
+    rerender(<CommitDetail oid={null} />);
+
+    expect(screen.getByText(/select a commit/i)).toBeInTheDocument();
+    expect(screen.queryByText("fix: do the thing")).not.toBeInTheDocument();
+  });
+
+  it("does not show a previous commit while the next commit is loading", async () => {
+    mockInvoke.mockResolvedValueOnce(fakeDetail);
+    const { rerender } = render(<CommitDetail oid="A" />);
+
+    await screen.findByText("fix: do the thing");
+    const pendingB = new Promise<CommitDetailData>(() => {});
+    mockInvoke.mockImplementationOnce(() => pendingB);
+    rerender(<CommitDetail oid="B" />);
+
+    expect(screen.getByText(/select a commit/i)).toBeInTheDocument();
+    expect(screen.queryByText("fix: do the thing")).not.toBeInTheDocument();
   });
 });

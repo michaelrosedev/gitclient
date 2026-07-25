@@ -144,6 +144,29 @@ describe("PRPanel", () => {
     );
   });
 
+  it("clears a previous load error and reloads when the GitHub repository changes", async () => {
+    mockInvoke.mockRejectedValueOnce(new Error("rate limited"));
+    render(<PRPanel />);
+    expect(await screen.findByText(/rate limited/i)).toBeInTheDocument();
+
+    const pendingReload = new Promise<never>(() => {});
+    mockInvoke.mockImplementationOnce(() => pendingReload);
+    act(() => {
+      useGithubStore.setState({
+        remoteInfo: {
+          host: "github.com",
+          owner: "mike",
+          repo: "another-repo",
+          protocol: "https",
+        },
+      });
+    });
+
+    await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText(/rate limited/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/mike\/another-repo/i)).toBeInTheDocument();
+  });
+
   it("reloads pull requests when the active repo path changes, even with the same remote host", async () => {
     useRepoStore.setState({
       currentRepo: { name: "repoA", path: "/repoA", headBranch: "main" },
