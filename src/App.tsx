@@ -75,6 +75,8 @@ function mergePresentationReducer(
 
 function RepositoryView({
   repoPath,
+  historyRightMode,
+  onHistoryRightModeChange,
   detailWidth,
   onResizeDetail,
   hookPaneHeight,
@@ -82,6 +84,8 @@ function RepositoryView({
   onStartPullRequest,
 }: {
   repoPath: string | null;
+  historyRightMode: HistoryRightMode;
+  onHistoryRightModeChange: (mode: HistoryRightMode) => void;
   detailWidth: number;
   onResizeDetail: (updater: (width: number) => number) => void;
   hookPaneHeight: number;
@@ -104,18 +108,16 @@ function RepositoryView({
     stageFile,
     applyIndexContent,
   } = useWorkingTreeStore();
-  const [historyRightMode, setHistoryRightMode] =
-    useState<HistoryRightMode>("commit");
   const currentHookRun = useHookStore((s) => selectHookRun(repoPath)(s));
 
   const enterUncommitted = () => {
     clearSelectedFile();
     clearCommitFile();
-    setHistoryRightMode("uncommitted");
+    onHistoryRightModeChange("uncommitted");
   };
   const exitUncommitted = () => {
     clearSelectedFile();
-    setHistoryRightMode("commit");
+    onHistoryRightModeChange("commit");
   };
 
   const showingUncommittedDiff =
@@ -238,6 +240,14 @@ export default function App() {
   const { status: operationStatus, loadStatus } = useMergeStore();
   const { initTheme } = useThemeStore();
   const [view, setView] = useState<View>("history");
+  const repoPath = currentRepo?.path ?? null;
+  const [historyPanel, setHistoryPanel] = useState<{
+    repoPath: string | null;
+    mode: HistoryRightMode;
+  }>({ repoPath, mode: "commit" });
+  if (historyPanel.repoPath !== repoPath) {
+    setHistoryPanel({ repoPath, mode: "commit" });
+  }
   const [sidebarWidth, setSidebarWidth] = usePersistedWidth(
     "sidebarWidth",
     220,
@@ -346,7 +356,6 @@ export default function App() {
   // the app root (not in the Sidebar) so it runs even when the sidebar is
   // collapsed — otherwise the remote wouldn't be detected and the push/pull
   // buttons (gated on a detected remote) would stay disabled.
-  const repoPath = currentRepo?.path ?? null;
   useEffect(() => {
     if (!repoPath) return;
     // Ahead/behind is fetched per-branch, on demand, by each sidebar row
@@ -529,8 +538,11 @@ export default function App() {
             <WelcomeView />
           ) : view === "history" ? (
             <RepositoryView
-              key={repoPath ?? "no-repository"}
               repoPath={repoPath}
+              historyRightMode={historyPanel.mode}
+              onHistoryRightModeChange={(mode) =>
+                setHistoryPanel((state) => ({ ...state, mode }))
+              }
               detailWidth={detailWidth}
               onResizeDetail={setDetailWidth}
               hookPaneHeight={hookPaneHeight}

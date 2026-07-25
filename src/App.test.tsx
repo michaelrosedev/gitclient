@@ -453,6 +453,24 @@ describe("App merge-editor latch", () => {
         screen.queryByRole("tablist", { name: "Views" }),
       ).not.toBeInTheDocument(),
     );
+
+    // Ending this merge clears its conflict latch. A later clean merge must
+    // therefore use the floating commit dialog rather than the stale editor.
+    useMergeStore.setState({ status: { kind: "none" } });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("tablist", { name: "Views" }),
+      ).toBeInTheDocument(),
+    );
+
+    useMergeStore.setState({
+      status: { kind: "merge", sourceBranch: "another-feature", conflicts: [] },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("tablist", { name: "Views" }),
+      ).toBeInTheDocument(),
+    );
   });
 
   it("shows the floating commit dialog, not the full-screen editor, for a merge that starts clean", async () => {
@@ -474,6 +492,46 @@ describe("App merge-editor latch", () => {
 });
 
 describe("App repository-scoped history panel", () => {
+  it("preserves the uncommitted panel when returning from another view in the same repository", async () => {
+    useGraphStore.setState({
+      viewport: {
+        nodes: [workingTreeNode],
+        totalCount: 1,
+        offset: 0,
+        headRow: null,
+      },
+    });
+
+    const { container } = render(<App />);
+    await waitFor(() =>
+      expect(screen.queryByText(/starting/i)).not.toBeInTheDocument(),
+    );
+
+    const workingTreeRow = await waitFor(() => {
+      const row = container.querySelector<HTMLElement>(
+        `[data-oid="${WORKING_TREE_OID}"]`,
+      );
+      expect(row).not.toBeNull();
+      return row!;
+    });
+    fireEvent.click(workingTreeRow);
+    await waitFor(() =>
+      expect(screen.getByText("0 file changes on")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "PRs" }));
+    await waitFor(() =>
+      expect(
+        screen.getByText("No GitHub remote detected for this repository."),
+      ).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "History" }));
+    await waitFor(() =>
+      expect(screen.getByText("0 file changes on")).toBeInTheDocument(),
+    );
+  });
+
   it("returns the right panel to commit details when the active repository changes", async () => {
     const nextRepo = { name: "other", path: "/other", headBranch: "trunk" };
     useGraphStore.setState({
