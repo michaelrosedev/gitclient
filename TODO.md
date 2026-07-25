@@ -8,8 +8,24 @@ built yet; **(Phase 6)** are from the polish/hardening phase.
 
 ## Repository management
 
-- [ ] Add support for worktrees
+- [x] Add support for worktrees
 - [ ] Bug - warning shown on open relating to inability to load stashes because "no repository open". Let's not try to load stashes when no repo is open...
+
+## UX
+
+- [ ] Consistent side panel menu options. Should be more usable and cleaner.
+- [ ] Use <https://jelly-ui.com> components - buttons, inputs, etc. (all components ideally)
+- [ ] Tabs to be more clearly identified as tab - shadows, borders, active tab indicator etc.
+- [ ] Left panel consistency - button placement, three dot menu, etc.
+- [ ] Remove "clone from github" from left hand panel. Should exist in "new tab page" only
+- [ ] Improve tooltip design - should have a "point" to the triggering element.
+- [ ] "Head" pill shown in git graph is unnecessary. Remove it.
+- [ ] Sub-menu for "pull" button is partially hidden behind the graph.
+- [ ] Close button in diff view could be a button instead
+- [ ] All icons should have tooltips - many don't (e.g. in the diff view it is inconsistent)
+- [ ] Icon for worktrees should look more clearly like a tree.
+- [ ] Clicking the "new tab" button when there is only a single tab open should not hide the current tab. It should instead have a "new tab experience" as a _new tab_ once clicked.
+- [ ] Add link to settings in main menu? Possibly rename "settings" to "preferences"
 
 ## Commit graph & branches
 
