@@ -110,6 +110,30 @@ describe("StageFileEditor", () => {
     });
   });
 
+  it("reseeds staged rows when the file or stage mode changes", async () => {
+    const { container, rerender } = render(<StageFileEditor path="first.txt" contents={twoChanges} stageMode="unstaged" />);
+    const firstToggles = await waitFor(() => {
+      const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle"));
+      expect(buttons.length).toBeGreaterThanOrEqual(2);
+      return buttons;
+    });
+    fireEvent.click(firstToggles[0]!);
+    await waitFor(() => expect(container.querySelector<HTMLButtonElement>(".cm-stage-toggle")!.textContent).toBe("−"));
+
+    rerender(<StageFileEditor path="second.txt" contents={twoChanges} stageMode="unstaged" />);
+    await waitFor(() => {
+      const buttons = container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle");
+      expect(Array.from(buttons).every((button) => button.textContent === "+")).toBe(true);
+    });
+    fireEvent.click(container.querySelector<HTMLButtonElement>(".cm-stage-toggle")!);
+    await waitFor(() => expect(container.querySelector<HTMLButtonElement>(".cm-stage-toggle")!.textContent).toBe("−"));
+    rerender(<StageFileEditor path="second.txt" contents={twoChanges} stageMode="staged" />);
+    await waitFor(() => {
+      const buttons = container.querySelectorAll<HTMLButtonElement>(".cm-stage-toggle");
+      expect(Array.from(buttons).every((button) => button.textContent === "−")).toBe(true);
+    });
+  });
+
   it("shows an addition solid-green on the right and hatched on the HEAD side", async () => {
     const { container } = renderEditor(inserted);
 
