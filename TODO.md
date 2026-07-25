@@ -79,7 +79,6 @@ built yet; **(Phase 6)** are from the polish/hardening phase.
 - [ ] Click "interactivity" on elements such as buttons, "ellipsis" menu buttons etc (something _like_ Material Design) that makes user interactions with elements obvious
 - [ ] Update stashes sidebar menu so that buttons are removed and the buttons' functionality is in a menu triggered by an "ellipsis" menu. Add a "view" option to the menu - choosing this option should select the stash in the commit graph and scroll the viewport to it automatically.
 - [ ] Use GitHub URLs to get avatars rather than gravatar.com. URL path should be `https://github.com/{user}.png` with optional size (e.g. `?size=50`). Same efficiencies and caching should be honoured.
-- [ ] Ladle - it works, but it looks **terrible** compared to what I'm used to with storybook. Can ladle be made to look good, or can we switch to storybook instead.
 - [ ] Consider building in a "todo list" capability with statuses like "todo", "doing", "done" to track small items of work per repository from in the app (rather than having to use github issues). Might be a terrible idea.
 
 ## Other issues

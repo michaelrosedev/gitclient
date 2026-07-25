@@ -64,21 +64,6 @@ cargo test
 
 ---
 
-## Component workshop (Ladle)
-
-View and refine UI primitives in isolation, with a light/dark theme toggle:
-
-```bash
-npm run ladle        # dev server at http://localhost:61000
-npm run ladle:build  # static build (build/)
-```
-
-Stories live next to their components as `*.stories.tsx`. Only pure,
-prop-driven components have stories; store-coupled components are not yet
-included.
-
----
-
 ## Performance on managed / corporate devices
 
 If the app feels sluggish — slow to open large repositories, laggy refreshes,

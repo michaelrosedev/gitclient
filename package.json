@@ -16,8 +16,6 @@
     "hooks:pre-commit": "lint-staged --concurrent false",
     "hooks:pre-push": "npm run test:unit -- --dir src --testTimeout=15000 && cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features",
     "test:unit": "vitest run",
-    "ladle": "ladle serve",
-    "ladle:build": "ladle build",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -38,7 +36,6 @@
     "zustand": "^5"
   },
   "devDependencies": {
-    "@ladle/react": "^5.1.1",
     "@tailwindcss/vite": "^4",
     "@tauri-apps/cli": "^2",
     "@testing-library/jest-dom": "^6.9.1",
