@@ -197,15 +197,23 @@ describe("HookOutputPane", () => {
 
   it("pauses follow when scrolled up and resumes at bottom", () => {
     seedRun();
-    render(<HookOutputPane repoPath="/repo" height={180} onResize={vi.fn()} />);
+    seedOtherRun();
+    const { rerender } = render(
+      <HookOutputPane repoPath="/repo" height={180} onResize={vi.fn()} />,
+    );
+
+    rerender(
+      <HookOutputPane repoPath="/other" height={180} onResize={vi.fn()} />,
+    );
     xterm.terminal.buffer.active.baseY = 20;
     xterm.terminal.buffer.active.viewportY = 10;
     act(() => xterm.scroll?.());
-    expect(useHookStore.getState().runs["/repo"]?.following).toBe(false);
+    expect(useHookStore.getState().runs["/repo"]?.following).toBe(true);
+    expect(useHookStore.getState().runs["/other"]?.following).toBe(false);
 
     xterm.terminal.buffer.active.viewportY = 20;
     act(() => xterm.scroll?.());
-    expect(useHookStore.getState().runs["/repo"]?.following).toBe(true);
+    expect(useHookStore.getState().runs["/other"]?.following).toBe(true);
   });
 
   it("scrolls only after xterm has processed the appended output", () => {

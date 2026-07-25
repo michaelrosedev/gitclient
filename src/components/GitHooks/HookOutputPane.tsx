@@ -36,8 +36,6 @@ export function HookOutputPane({
   const writtenRef = useRef<Array<{ stream: string; chunk: string }>>([]);
   const runKeyRef = useRef<string | undefined>(undefined);
   const terminalGenerationRef = useRef(0);
-  const repoPathRef = useRef(repoPath);
-  repoPathRef.current = repoPath;
 
   const run = useHookStore(selectHookRun(repoPath));
   const setPaneVisible = useHookStore((state) => state.setPaneVisible);
@@ -64,11 +62,9 @@ export function HookOutputPane({
     const scrollListener = terminal.onScroll(() => {
       const buffer = terminal.buffer.active;
       const atBottom = buffer.viewportY >= buffer.baseY;
-      const currentRun = selectHookRun(repoPathRef.current)(
-        useHookStore.getState(),
-      );
+      const currentRun = selectHookRun(repoPath)(useHookStore.getState());
       if (currentRun && currentRun.following !== atBottom) {
-        useHookStore.getState().setFollowing(repoPathRef.current, atBottom);
+        useHookStore.getState().setFollowing(repoPath, atBottom);
       }
     });
     terminalRef.current = terminal;
@@ -82,7 +78,7 @@ export function HookOutputPane({
       terminal.dispose();
       writtenRef.current = [];
     };
-  }, [run?.paneVisible]);
+  }, [repoPath, run?.paneVisible]);
 
   useEffect(() => {
     const terminal = terminalRef.current;
