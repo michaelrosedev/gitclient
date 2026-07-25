@@ -375,3 +375,16 @@ git commit -m "refactor: satisfy React Hooks v7 migration rules"
 - **No bypasses:** Task 1 requires the full preset and Task 10 rejects production suppressions.
 - **Regression safety:** Each affected component has a colocated test file and receives an explicit transition test before implementation.
 - **Scope:** The plan does not enable React Compiler or introduce product changes.
+
+## Execution Progress — 2026-07-25
+
+- [x] **Task 1:** Restored the complete Hooks v7 preset as an intentional uncommitted `eslint.config.js` change. Its 27-diagnostic lint baseline was confirmed; the policy will be committed only with the final green migration.
+- [x] **Task 2:** Removed App lifecycle diagnostics and preserved repository-scoped history state across non-history views. Commits: `50f639b`, `241212a`. Approved after re-review.
+- [x] **Task 3:** Scoped commit-detail and PR panel state; added the late-arriving PR-draft regression test. Commits: `5c90aac`, `d13c381`. Functionally approved.
+- [x] **Task 4:** Scoped Git Hooks and Git Identity forms; added a regression test that distinguishes requested identity values from backend-confirmed reload values. Commits: `ea06ef3`, `4df4f5d`. Approved after re-review.
+- [ ] **Task 5:** Replace the GitHub settings render-time connection cache.
+- [ ] **Task 6:** Refactor stash, detached-head, and staged-row lifecycle resets.
+- [ ] **Task 7:** Preserve merge-editor and dropdown behavior without effect resets.
+- [ ] **Task 8:** Eliminate latest-prop refs in shared drag UI.
+- [ ] **Task 9:** Remove terminal and CodeMirror render-time refs.
+- [ ] **Task 10:** Complete full-policy verification and commit the green `eslint.config.js` change.
