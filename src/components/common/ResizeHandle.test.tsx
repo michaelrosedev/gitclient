@@ -30,7 +30,13 @@ describe("ResizeHandle", () => {
 
   it("reports the vertical delta for a horizontal handle", () => {
     const onResize = vi.fn();
-    render(<ResizeHandle orientation="horizontal" onResize={onResize} ariaLabel="Resize section" />);
+    render(
+      <ResizeHandle
+        orientation="horizontal"
+        onResize={onResize}
+        ariaLabel="Resize section"
+      />,
+    );
     const handle = screen.getByRole("separator", { name: "Resize section" });
     expect(handle).toHaveAttribute("aria-orientation", "horizontal");
 
@@ -60,5 +66,32 @@ describe("ResizeHandle", () => {
 
     fire(window, "pointermove", 300);
     expect(onResize).not.toHaveBeenCalled();
+  });
+
+  it("rebinds an active drag to a replacement resize callback", () => {
+    const firstResize = vi.fn();
+    const replacementResize = vi.fn();
+    const addListener = vi.spyOn(window, "addEventListener");
+    const removeListener = vi.spyOn(window, "removeEventListener");
+    const { rerender } = render(
+      <ResizeHandle onResize={firstResize} ariaLabel="Resize" />,
+    );
+    const handle = screen.getByRole("separator", { name: "Resize" });
+
+    fire(handle, "pointerdown", 100);
+    const initialMove = addListener.mock.calls.find(
+      ([type]) => type === "pointermove",
+    )![1];
+
+    rerender(<ResizeHandle onResize={replacementResize} ariaLabel="Resize" />);
+
+    expect(removeListener).toHaveBeenCalledWith("pointermove", initialMove);
+    fire(window, "pointermove", 125);
+    expect(firstResize).not.toHaveBeenCalled();
+    expect(replacementResize).toHaveBeenCalledWith(25);
+
+    fire(window, "pointerup", 125);
+    addListener.mockRestore();
+    removeListener.mockRestore();
   });
 });

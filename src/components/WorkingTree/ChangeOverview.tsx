@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { overviewMarks, type DiffRow, type OverviewColor, type OverviewLane } from "../../lib/lineDiff";
+import {
+  overviewMarks,
+  type DiffRow,
+  type OverviewColor,
+  type OverviewLane,
+} from "../../lib/lineDiff";
 import { paneLabelStyle } from "./paneLabelStyle";
 
 // A GitKraken-style overview strip mapping the file's changes onto the full
@@ -26,7 +31,8 @@ const COLOR_VAR: Record<OverviewColor, string> = {
   mod: "var(--color-warning)",
 };
 
-const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+const clamp = (n: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, n));
 
 export function ChangeOverview({
   rows,
@@ -71,22 +77,19 @@ export function ChangeOverview({
   const showThumb = !!onScrollTo && vpHeight < 1;
   const thumbHeight = Math.max(vpHeight, MIN_THUMB_FRACTION);
 
-  // Latest props for the pointer handlers, which are attached once but must read
-  // the current viewport as it changes during a drag.
-  const stateRef = useRef({ vpTop, vpHeight, thumbHeight, onScrollTo });
-  stateRef.current = { vpTop, vpHeight, thumbHeight, onScrollTo };
-
-  // Scroll so the thumb tracks the cursor. Stable, so the drag listeners below
-  // stay attached across the viewport updates a scroll produces (latest state is
-  // read from `stateRef`).
-  const scrollToClientY = useCallback((clientY: number) => {
-    const { thumbHeight: h, onScrollTo: scroll } = stateRef.current;
-    const rect = stripRef.current?.getBoundingClientRect();
-    if (!rect || rect.height === 0 || !scroll) return;
-    const p = clamp((clientY - rect.top) / rect.height, 0, 1);
-    // Desired thumb-top, bounded so the thumb stays fully within the strip.
-    scroll(clamp(p - grabOffsetRef.current, 0, Math.max(0, 1 - h)));
-  }, []);
+  // Scroll so the thumb tracks the cursor.
+  const scrollToClientY = useCallback(
+    (clientY: number) => {
+      const rect = stripRef.current?.getBoundingClientRect();
+      if (!rect || rect.height === 0 || !onScrollTo) return;
+      const p = clamp((clientY - rect.top) / rect.height, 0, 1);
+      // Desired thumb-top, bounded so the thumb stays fully within the strip.
+      onScrollTo(
+        clamp(p - grabOffsetRef.current, 0, Math.max(0, 1 - thumbHeight)),
+      );
+    },
+    [onScrollTo, thumbHeight],
+  );
 
   // While dragging, follow the cursor anywhere on the page (not just over the
   // strip) and end on release — the standard scrollbar-thumb drag.
@@ -153,9 +156,20 @@ export function ChangeOverview({
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: split ? LANE_WIDTH * 2 + 1 : LANE_WIDTH, flexShrink: 0 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: split ? LANE_WIDTH * 2 + 1 : LANE_WIDTH,
+        flexShrink: 0,
+      }}
+    >
       {showHeaderSpacer && (
-        <div data-testid="overview-header-spacer" aria-hidden style={{ ...paneLabelStyle, visibility: "hidden" }}>
+        <div
+          data-testid="overview-header-spacer"
+          aria-hidden
+          style={{ ...paneLabelStyle, visibility: "hidden" }}
+        >
           {" "}
         </div>
       )}
