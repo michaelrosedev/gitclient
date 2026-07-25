@@ -7,7 +7,10 @@ import {
   highlightActiveLineGutter,
   type DecorationSet,
 } from "@codemirror/view";
-import { editorThemeExtension, registerEditorView } from "../../lib/editorTheme";
+import {
+  editorThemeExtension,
+  registerEditorView,
+} from "../../lib/editorTheme";
 import { languageForPath } from "../../lib/editorLanguage";
 import type { ConflictedFile } from "../../types/merge";
 import { isBlockResolved } from "../../lib/conflictBlocks";
@@ -30,7 +33,10 @@ interface ConflictFileEditorProps {
 type BlockSelection = { current: Set<number>; source: Set<number> };
 type Selections = Record<number, BlockSelection>;
 
-const emptyBlockSelection = (): BlockSelection => ({ current: new Set(), source: new Set() });
+const emptyBlockSelection = (): BlockSelection => ({
+  current: new Set(),
+  source: new Set(),
+});
 
 const paneTheme = EditorView.theme({
   "&": {
@@ -40,7 +46,10 @@ const paneTheme = EditorView.theme({
     height: "100%",
   },
   ".cm-scroller": { overflow: "auto" },
-  ".cm-gutters": { backgroundColor: "var(--color-bg-elevated)", border: "none" },
+  ".cm-gutters": {
+    backgroundColor: "var(--color-bg-elevated)",
+    border: "none",
+  },
   ".cm-activeLine": { backgroundColor: "var(--color-bg-elevated)" },
   ".cm-activeLineGutter": { backgroundColor: "var(--color-bg-elevated)" },
   ".cm-diff-add": {
@@ -53,13 +62,19 @@ const paneTheme = EditorView.theme({
   },
   ".cm-diff-add-line": { backgroundColor: "var(--color-diff-add-bg)" },
   ".cm-diff-del-line": { backgroundColor: "var(--color-diff-del-bg)" },
-  ".cm-select-gutter": { paddingLeft: "var(--space-1)", paddingRight: "var(--space-1)" },
+  ".cm-select-gutter": {
+    paddingLeft: "var(--space-1)",
+    paddingRight: "var(--space-1)",
+  },
   ".cm-select-checkbox": { cursor: "pointer", margin: 0 },
 });
 
 // Active-line highlight shared by every pane (read-only panes still track a
 // cursor, so clicking a line highlights it).
-const activeLineExtensions = [highlightActiveLine(), highlightActiveLineGutter()];
+const activeLineExtensions = [
+  highlightActiveLine(),
+  highlightActiveLineGutter(),
+];
 
 interface BlockRange {
   from: number;
@@ -164,14 +179,43 @@ function ReadOnlyPane({
   }, [selectedLines, selectionRanges]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+      }}
+    >
       <div style={paneLabelStyle}>{label}</div>
-      <div ref={containerRef} style={{ flex: 1, minHeight: 0, overflow: "hidden" }} />
+      <div
+        ref={containerRef}
+        style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
+      />
     </div>
   );
 }
 
-export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: ConflictFileEditorProps) {
+export function ConflictFileEditor({
+  file,
+  onMarkResolved,
+  onDirtyChange,
+}: ConflictFileEditorProps) {
+  return (
+    <ConflictFileEditorBody
+      key={`${file.path}\u0000${file.seededResult ?? ""}`}
+      file={file}
+      onMarkResolved={onMarkResolved}
+      onDirtyChange={onDirtyChange}
+    />
+  );
+}
+
+function ConflictFileEditorBody({
+  file,
+  onMarkResolved,
+  onDirtyChange,
+}: ConflictFileEditorProps) {
   const resultContainerRef = useRef<HTMLDivElement>(null);
   const resultViewRef = useRef<EditorView | null>(null);
   const [resultContent, setResultContent] = useState(file.seededResult ?? "");
@@ -181,16 +225,23 @@ export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: Conf
   const language = useMemo(() => languageForPath(file.path), [file.path]);
 
   const sourceDecorations = useMemo(
-    () => buildPaneDecorations(file.theirsContent ?? "", file.conflictBlocks, "theirs"),
+    () =>
+      buildPaneDecorations(
+        file.theirsContent ?? "",
+        file.conflictBlocks,
+        "theirs",
+      ),
     [file.theirsContent, file.conflictBlocks],
   );
   const currentDecorations = useMemo(
-    () => buildPaneDecorations(file.oursContent ?? "", file.conflictBlocks, "ours"),
+    () =>
+      buildPaneDecorations(file.oursContent ?? "", file.conflictBlocks, "ours"),
     [file.oursContent, file.conflictBlocks],
   );
 
   const sourceRanges = useMemo(
-    () => blockLineRanges(file.theirsContent ?? "", file.conflictBlocks, "theirs"),
+    () =>
+      blockLineRanges(file.theirsContent ?? "", file.conflictBlocks, "theirs"),
     [file.theirsContent, file.conflictBlocks],
   );
   const currentRanges = useMemo(
@@ -206,14 +257,6 @@ export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: Conf
     () => paneSelectedLineNumbers(currentRanges, selections, "current"),
     [currentRanges, selections],
   );
-
-  // Reset selection and result text when switching files, or when the same
-  // file's seeded result changes underneath us (e.g. resolved externally mid-merge).
-  useEffect(() => {
-    selectionsRef.current = {};
-    setSelections({});
-    setResultContent(file.seededResult ?? "");
-  }, [file.path, file.seededResult]);
 
   useEffect(() => {
     if (!resultContainerRef.current) return;
@@ -275,7 +318,9 @@ export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: Conf
       );
       const range = view.state.field(blockRangesField)[blockIndex];
       if (!range) return;
-      view.dispatch({ changes: { from: range.from, to: range.to, insert: text } });
+      view.dispatch({
+        changes: { from: range.from, to: range.to, insert: text },
+      });
     },
     [file],
   );
@@ -319,22 +364,36 @@ export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: Conf
       const block = file.conflictBlocks[blockIndex];
       if (!block) return;
       const lines =
-        side === "current" ? splitBlockLines(block.oursText) : splitBlockLines(block.theirsText);
+        side === "current"
+          ? splitBlockLines(block.oursText)
+          : splitBlockLines(block.theirsText);
       const all = new Set(lines.map((_, i) => i));
       setBlockSelection(
         blockIndex,
-        side === "current" ? { current: all, source: new Set() } : { current: new Set(), source: all },
+        side === "current"
+          ? { current: all, source: new Set() }
+          : { current: new Set(), source: all },
       );
     },
     [file, setBlockSelection],
   );
 
   function handleMarkResolved() {
-    onMarkResolved(file.path, resultViewRef.current?.state.doc.toString() ?? resultContent);
+    onMarkResolved(
+      file.path,
+      resultViewRef.current?.state.doc.toString() ?? resultContent,
+    );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+      }}
+    >
       <div
         style={{
           display: "grid",
@@ -364,7 +423,14 @@ export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: Conf
           language={language}
         />
       </div>
-      <div style={{ display: "flex", flexDirection: "column", height: "50%", minHeight: 0 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "50%",
+          minHeight: 0,
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -375,10 +441,21 @@ export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: Conf
             borderTop: "1px solid var(--color-border-subtle)",
           }}
         >
-          <span style={{ fontSize: "var(--font-size-sm)", fontWeight: 500, color: "var(--color-text-secondary)" }}>
+          <span
+            style={{
+              fontSize: "var(--font-size-sm)",
+              fontWeight: 500,
+              color: "var(--color-text-secondary)",
+            }}
+          >
             Result
           </span>
-          <Button variant="primary" size="sm" type="button" onClick={handleMarkResolved}>
+          <Button
+            variant="primary"
+            size="sm"
+            type="button"
+            onClick={handleMarkResolved}
+          >
             Mark resolved
           </Button>
         </div>
@@ -393,17 +470,41 @@ export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: Conf
             }}
           >
             {file.conflictBlocks.map((block, index) => {
-              const resolved = isBlockResolved(resultContent, file.seededResult ?? "", block);
+              const resolved = isBlockResolved(
+                resultContent,
+                file.seededResult ?? "",
+                block,
+              );
               return (
-                <div key={index} style={{ display: "flex", alignItems: "center", gap: "var(--space-1)" }}>
-                  <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)" }}>
+                <div
+                  key={index}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--space-1)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "var(--font-size-sm)",
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
                     Conflict {index + 1}
                     {resolved ? " — resolved" : ""}
                   </span>
-                  <Button size="sm" type="button" onClick={() => selectWholeSide(index, "source")}>
+                  <Button
+                    size="sm"
+                    type="button"
+                    onClick={() => selectWholeSide(index, "source")}
+                  >
                     Accept source
                   </Button>
-                  <Button size="sm" type="button" onClick={() => selectWholeSide(index, "current")}>
+                  <Button
+                    size="sm"
+                    type="button"
+                    onClick={() => selectWholeSide(index, "current")}
+                  >
                     Accept current
                   </Button>
                 </div>
@@ -411,7 +512,11 @@ export function ConflictFileEditor({ file, onMarkResolved, onDirtyChange }: Conf
             })}
           </div>
         )}
-        <div ref={resultContainerRef} data-testid="result-pane" style={{ flex: 1, minHeight: 0, overflow: "hidden" }} />
+        <div
+          ref={resultContainerRef}
+          data-testid="result-pane"
+          style={{ flex: 1, minHeight: 0, overflow: "hidden" }}
+        />
       </div>
     </div>
   );
